@@ -197,12 +197,14 @@ Template folders are searched in this order, and the first match wins:
 3. the framework's own templates (welcome page, error pages).
 
 So a project can override any app or framework template by creating a file
-with the same name in `templates/`. For example, `templates/404.php`
-replaces the production "page not found" page.
+with the same name in `templates/`. For example, `templates/404.html`
+replaces the production "page not found" page. A project template can even
+extend the template it replaces (see
+[Template inheritance](../topics/templates.md#template-inheritance)).
 
-!!! note "Templates in v0.1"
-    Templates are plain PHP files for now. Print values with `<?= e($value) ?>`
-    so they are HTML-escaped. The Django-like template language arrives in v0.3.
+Files ending in `.php` are plain PHP templates; every other extension
+(`.html`, `.txt`...) uses the [template language](../topics/templates.md).
+Compiled templates are cached in `storage/templates/`.
 
 ## storage/
 

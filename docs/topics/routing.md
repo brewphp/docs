@@ -123,7 +123,11 @@ URL from it:
 ```php
 reverse('post-detail', ['id' => 5]);                    // "/posts/5/"
 reverse('post-detail', ['id' => 5], ['page' => 2]);     // "/posts/5/?page=2"
+reverse('post-detail', [5]);                            // positional, in pattern order
 ```
+
+In templates, use the [`{% url %}`](../ref/templates-builtins.md#url) tag:
+`{% url 'post-detail' post.id %}`.
 
 Parameters are converted back to URL text and encoded. `reverse()` throws
 `BrewPHP\Routing\NoReverseMatch` when the name does not exist (with a

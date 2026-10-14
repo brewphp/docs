@@ -65,11 +65,14 @@ nav:
   - Topics:
       - Routing: topics/routing.md
       - Views: topics/views.md
+      - Templates: topics/templates.md
       - Requests and responses: topics/requests-responses.md
       - Middleware: topics/middleware.md
       - Models: topics/models.md
       - Making queries: topics/queries.md
       - Databases: topics/databases.md
+  - Reference:
+      - Built-in tags and filters: ref/templates-builtins.md
   - CLI:
       - manage.php: cli/overview.md
   - About:

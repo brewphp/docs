@@ -10,6 +10,7 @@ default value.
 declare(strict_types=1);
 
 use BrewPHP\Middleware\SecurityHeadersMiddleware;
+use BrewPHP\Templates\ContextProcessors;
 
 return [
     'DEBUG' => env('DEBUG', false),
@@ -24,6 +25,11 @@ return [
     'ROOT_URLCONF' => 'config/urls.php',
     'TEMPLATES' => [
         'DIRS' => ['templates'],
+        'CACHE' => true,
+        'STRICT' => false,
+        'CONTEXT_PROCESSORS' => [
+            [ContextProcessors::class, 'request'],
+        ],
     ],
     'APP_URL' => env('APP_URL', 'http://127.0.0.1:8000'),
     'TIME_ZONE' => env('TIME_ZONE', 'UTC'),
@@ -83,14 +89,40 @@ the array and read it with `settings('BLOG_POSTS_PER_PAGE')`.
 | `MIDDLEWARE` | list | `[]` | Middleware run around every request, outermost first. See [Middleware](../topics/middleware.md). |
 | `ROOT_URLCONF` | string | `'config/urls.php'` | File that returns the root list of routes. Relative paths start at the project folder. |
 | `APPEND_SLASH` | bool | `true` | Redirect `/about` to `/about/` when only the latter exists. See [Routing](../topics/routing.md#trailing-slashes). |
-| `TEMPLATES` | array | `['DIRS' => ['templates']]` | `DIRS` lists project template folders, searched before app templates. |
+| `TEMPLATES` | array | see [Templates](#templates) | Template folders, caching, strict mode and context processors. |
 | `APP_URL` | string | `'http://localhost'` | Base URL used by `url()` outside a request (commands, emails). |
 | `TIME_ZONE` | string | `'UTC'` | Default time zone, applied with `date_default_timezone_set()`. |
 | `LANGUAGE` | string | `'en'` | Default language of the site. |
-| `STATIC_URL` | string | `'/static/'` | URL prefix of static files. |
+| `STATIC_URL` | string | `'/static/'` | URL prefix of static files, used by `{% static %}`. |
 | `MEDIA_URL` | string | `'/media/'` | URL prefix of uploaded files. |
 | `STORAGE_PATH` | string | `'storage'` | Folder for cache, logs, sessions and compiled templates. |
 | `COMMANDS` | list of class names | `[]` | Extra `manage.php` commands outside app `Commands/` folders. |
+
+### Templates
+
+The `TEMPLATES` array configures the [template engine](../topics/templates.md).
+Keys you leave out keep their default.
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `DIRS` | list of strings | `['templates']` | Project template folders, searched before each app's `templates/`. Relative paths start at the project folder. |
+| `CACHE` | bool | `true` | Reuse compiled templates from `storage/templates/` until their source changes. `false` compiles every template again on each request. |
+| `STRICT` | bool | `false` | Raise `VariableDoesNotExist` when a template uses a missing variable or attribute, instead of printing an empty string. Handy in development and tests. |
+| `CONTEXT_PROCESSORS` | list | `[[ContextProcessors::class, 'request']]` | Callables (or names of invokable classes) that receive the `Request` and return variables for every template rendered by `render()`. See [Context processors](../topics/templates.md#context-processors). |
+
+```php title="config/settings.php"
+use BrewPHP\Templates\ContextProcessors;
+
+'TEMPLATES' => [
+    'DIRS' => ['templates'],
+    'CACHE' => true,
+    'STRICT' => env('TEMPLATES_STRICT', false),
+    'CONTEXT_PROCESSORS' => [
+        [ContextProcessors::class, 'request'],
+        Apps\Shop\CartProcessor::class,
+    ],
+],
+```
 
 ### Databases
 
@@ -246,17 +278,32 @@ An unknown URL lists the URL patterns that were tried.
 
 With `DEBUG = false`, a plain page is shown and server errors are written to
 PHP's error log. Override a page by creating a template with the status code
-as its name in your project's `templates/` folder:
+as its name in your project's `templates/` folder, either in the template
+language (`404.html`) or in plain PHP (`404.php`); `.html` is tried first:
 
 | Template | Shown for |
 |---|---|
-| `404.php` | Page not found |
-| `403.php` | Permission denied |
-| `400.php` | Bad request (for example a host not in `ALLOWED_HOSTS`) |
-| `500.php` | Server error |
+| `404.html` / `404.php` | Page not found |
+| `403.html` / `403.php` | Permission denied |
+| `400.html` / `400.php` | Bad request (for example a host not in `ALLOWED_HOSTS`) |
+| `500.html` / `500.php` | Server error |
 
-Each template receives `$status`, `$title` and `$message` (the message of
-the exception for 4xx errors, empty for server errors):
+Each template receives `status`, `title` and `message` (the message of
+the exception for 4xx errors, empty for server errors), plus the variables
+of the [context processors](../topics/templates.md#context-processors), so
+it can extend your layout:
+
+```html+django title="templates/404.html"
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>We could not find that page.</h1>
+    <p>{{ message|default:request.path }}</p>
+    <p><a href="/">Go home</a></p>
+{% endblock %}
+```
+
+The same page as a PHP template:
 
 ```php title="templates/404.php"
 <!doctype html>

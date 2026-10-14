@@ -21,7 +21,7 @@ use BrewPHP\Http\Response;
 
 function post_detail(Request $request, int $id): Response
 {
-    return render('blog/post_detail.php', ['id' => $id]);
+    return render('blog/post_detail.html', ['id' => $id]);
 }
 ```
 
@@ -209,7 +209,7 @@ final class TimedView extends View
 !!! note "Generic views are coming"
     Django-style generic views (`TemplateView`, `ListView`, `DetailView`,
     `CreateView`, `UpdateView`, `DeleteView`) and `ApiView` are coming in a
-    later release, together with the template engine and the ORM.
+    later release.
 
 ## How arguments are filled
 
@@ -260,23 +260,47 @@ class and helper.
 `render()` renders a template and wraps it in a response:
 
 ```php
-return render('blog/post_detail.php', ['id' => $id, 'title' => 'Hello']);
+return render('blog/post_detail.html', ['post' => $post]);
+return render('blog/post_detail.html', ['post' => $post], status: 201, headers: ['X-Frame-Options' => 'SAMEORIGIN']);
 ```
 
 The template is searched in the project's `templates/`, then each app's
 `templates/` folder (see [Project structure](../getting-started/project-structure.md#templates)).
-In v0.1 templates are plain PHP; the context values become variables. Always
-escape what you print with `e()`:
+Its extension picks the engine: `.html` (and every extension other than
+`.php`) uses the [template language](templates.md), which escapes
+everything automatically:
+
+```html+django title="apps/blog/templates/blog/post_detail.html"
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>{{ post.title }}</h1>
+    <p>By {{ post.author.name }}</p>
+{% endblock %}
+```
+
+During a request, `render()` runs the
+[context processors](templates.md#context-processors) first, so templates
+also get `request` (and whatever your processors add). The view's own
+values win on a name clash. To get the HTML as a string instead of a
+response, use `render_to_string()`:
+
+```php
+$html = render_to_string('emails/welcome.txt', ['user' => $user]);
+```
+
+`.php` templates are still supported: they are plain PHP, the context
+values become variables, and you escape what you print with `e()`:
 
 ```php title="apps/blog/templates/blog/post_detail.php"
 <h1><?= e($title) ?></h1>
 <p>Post number <?= e($id) ?></p>
 ```
 
-!!! warning "Escape everything"
-    Printing `<?= $title ?>` without `e()` lets a user who controls the value
-    inject HTML and JavaScript (XSS). The template engine coming in v0.3
-    escapes automatically.
+!!! warning "Escape everything in PHP templates"
+    In a `.php` template, printing `<?= $title ?>` without `e()` lets a user
+    who controls the value inject HTML and JavaScript (XSS). The template
+    language escapes automatically, so prefer `.html` templates.
 
 ## Errors in views
 
@@ -301,7 +325,7 @@ function members(): never
 ```
 
 Any other exception becomes a `500` error: a detailed page with `DEBUG` on,
-the `500.php` template in production. See
+the `500.html` (or `500.php`) template in production. See
 [Error pages](../getting-started/configuration.md#error-pages).
 
 ## Dependency injection

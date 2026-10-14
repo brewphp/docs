@@ -8,10 +8,33 @@ in the framework repository.
 
 ## [Unreleased]
 
-The v0.1 foundation and the v0.2 ORM.
+The v0.1 foundation, the v0.2 ORM and the v0.3 template language.
 
 ### Added
 
+- **Templates (v0.3):** a Django-like template language compiled to PHP and
+  cached in `storage/templates/`: variables with dotted lookups into
+  arrays, objects, models, QuerySets and pages; filters; template
+  inheritance with `{% extends %}`, `{% block %}` and `{{ block.super }}`;
+  `{% include %}`; automatic HTML escaping with `SafeString`, `|safe` and
+  `{% autoescape %}`. `.php` templates keep working: the extension picks
+  the engine.
+- **Template tags and filters (v0.3):** `if`, `for`, `with`, `url`,
+  `static`, `now`, `cycle`, `firstof`, `spaceless`, `verbatim`, `filter`,
+  `comment`, `csrf_token` and more; 33 filters from `add` to `yesno`,
+  including `date`, `floatformat`, `linebreaks` and `json_script`.
+- **Custom tags and filters (v0.3):** `Library` with `filter()`,
+  `simpleTag()` and compiled `tag()`, registered from an app's `ready()`;
+  context processors (`TEMPLATES.CONTEXT_PROCESSORS`) with the built-in
+  `request` processor; `render_to_string()` and `mark_safe()`.
+- **Template errors (v0.3):** syntax and rendering errors name the template
+  and line, and the debug page shows the template source; `TEMPLATES.STRICT`
+  reports missing variables.
+- **Safety (v0.3):** templates never run PHP from their source, never call
+  methods marked `#[AltersData]` (such as `save()` and `delete()`), and
+  `json_script` encodes HTML characters.
+- **Error pages and routing (v0.3):** `404.html`-style error templates;
+  `reverse()` accepts positional parameters.
 - **Database (v0.2):** the `DATABASES` setting for SQLite, MySQL/MariaDB and
   PostgreSQL; lazy connections with `db()`, raw SQL helpers, nested
   transactions with savepoints and a query log while `DEBUG` is on.

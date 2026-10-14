@@ -141,11 +141,8 @@ tests and documentation.
 |---|---|---|
 | v0.1 | Router, views, request/response, settings, CLI | **Available now** |
 | v0.2 | ORM (SQLite, MySQL, PostgreSQL) | **Available now** |
-| v0.3 | Templates (Django-like syntax) | Coming |
+| v0.3 | Templates (Django-like syntax) | **Available now** |
 | v0.4 | Migrations and `startapp` | Coming |
 | v0.5 | Auth, sessions, CSRF, forms | Coming |
 | v0.6 | Automatic admin | Coming |
 
-!!! note "Templates in v0.1"
-    Until the template engine arrives in v0.3, templates are plain PHP files
-    rendered with `render()`. Escape every value you print with `e()`.
