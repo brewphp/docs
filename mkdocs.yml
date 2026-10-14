@@ -67,6 +67,9 @@ nav:
       - Views: topics/views.md
       - Requests and responses: topics/requests-responses.md
       - Middleware: topics/middleware.md
+      - Models: topics/models.md
+      - Making queries: topics/queries.md
+      - Databases: topics/databases.md
   - CLI:
       - manage.php: cli/overview.md
   - About:

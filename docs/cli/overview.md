@@ -111,6 +111,7 @@ Environment
   Time zone .............................................. UTC
   Language ................................................ en
   URLconf .................................... config/urls.php
+  Database ............................ sqlite (storage/db.sqlite3)
 
 Installed apps
   pages ........................................... apps.pages
@@ -172,6 +173,9 @@ CI. The checks:
 | `security.W020` | warning (deploy) | `ALLOWED_HOSTS` is empty |
 | `security.W004` | warning (deploy) | `SECURE_HSTS_SECONDS` is not set |
 | `security.W001` | warning (deploy) | `SecurityHeadersMiddleware` is not in `MIDDLEWARE` |
+| `db.E001` | error | `DATABASES` has no `default` connection |
+| `db.E002` | error | a `DATABASES` entry is not an array or has an unknown `ENGINE` |
+| `db.E003` | error | the PDO driver of a database engine is not installed |
 
 Apps can register their own checks in `ready()`:
 

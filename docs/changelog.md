@@ -8,10 +8,30 @@ in the framework repository.
 
 ## [Unreleased]
 
-The v0.1 foundation.
+The v0.1 foundation and the v0.2 ORM.
 
 ### Added
 
+- **Database (v0.2):** the `DATABASES` setting for SQLite, MySQL/MariaDB and
+  PostgreSQL; lazy connections with `db()`, raw SQL helpers, nested
+  transactions with savepoints and a query log while `DEBUG` is on.
+- **Models (v0.2):** `Model` with fields, an implicit `id`, table names
+  from the app label, ordering, indexes, hooks (`beforeSave()`,
+  `afterSave()`, `beforeDelete()`, `afterDelete()`) and validation with
+  `fullClean()`, `clean()` and `ValidationError`; 20 field types including
+  `ForeignKey` and `OneToOneField`, choices from backed enums, and
+  `OnDelete` rules applied in PHP.
+- **Queries (v0.2):** lazy, immutable QuerySets with Django lookups,
+  relations followed with double underscores in both directions, `Q` and
+  `F` expressions, ordering, slicing, `values()`, `valuesList()`,
+  aggregation (`Count`, `Sum`, `Avg`, `Min`, `Max`), `selectRelated()`,
+  bulk `update()` and `delete()`, `getOrCreate()`, `updateOrCreate()`,
+  `paginate()`, `raw()` and `get_object_or_404()`.
+- **Schema editor (v0.2):** create, change and drop tables from models on
+  every engine (SQLite through table rebuilds), until migrations arrive.
+- **Pagination (v0.2):** `Paginator` and `Page`.
+- **CLI (v0.2):** `about` shows the database; `check` validates
+  `DATABASES`.
 - **Application and configuration:** `Application` with project paths and
   installed apps, `.env` loading with `env()`, `config/settings.php` with
   framework defaults, and a small dependency-injection container with

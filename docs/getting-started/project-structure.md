@@ -70,7 +70,7 @@ myapp/
 ## Apps
 
 Like in Django, a project is made of **apps**: folders that group the views,
-URLs, templates and (later) models of one part of the site, such as a blog or
+URLs, templates and models of one part of the site, such as a blog or
 a shop. Apps are listed in the `INSTALLED_APPS` setting:
 
 ```php title="config/settings.php"
@@ -182,9 +182,11 @@ namespace are taken from the class.
 | `views.php` | Views |
 | `urls.php` | Routes, mounted from the root URLconf with `include_urls()` |
 | `templates/<label>/` | Templates; the extra folder avoids name clashes between apps |
+| `models.php` | [Models](../topics/models.md) |
+| `Models/` | Models, one class per file (loaded at boot like `models.php`) |
 | `Commands/` | `manage.php` commands, discovered automatically |
 | `tests/` | Tests of the app |
-| `models.php`, `migrations/`, `forms.php`, `admin.php`, `static/<label>/` | Coming in later releases |
+| `migrations/`, `forms.php`, `admin.php`, `static/<label>/` | Coming in later releases |
 
 ## Templates
 

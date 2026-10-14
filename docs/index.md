@@ -94,6 +94,15 @@ builds the URL `/hello/Ada/` from the route name.
 
     [:octicons-arrow-right-24: Requests and responses](topics/requests-responses.md)
 
+-   **Models and queries**
+
+    ---
+
+    A Django-style ORM for SQLite, MySQL and PostgreSQL: fields, relations,
+    lookups, Q and F expressions, aggregation and pagination.
+
+    [:octicons-arrow-right-24: Models](topics/models.md)
+
 -   **Middleware**
 
     ---
@@ -131,7 +140,7 @@ tests and documentation.
 | Version | Scope | Status |
 |---|---|---|
 | v0.1 | Router, views, request/response, settings, CLI | **Available now** |
-| v0.2 | ORM (SQLite, MySQL, PostgreSQL) | Coming |
+| v0.2 | ORM (SQLite, MySQL, PostgreSQL) | **Available now** |
 | v0.3 | Templates (Django-like syntax) | Coming |
 | v0.4 | Migrations and `startapp` | Coming |
 | v0.5 | Auth, sessions, CSRF, forms | Coming |

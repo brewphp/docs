@@ -30,6 +30,16 @@ return [
     'LANGUAGE' => 'en',
     'STATIC_URL' => '/static/',
     'MEDIA_URL' => '/media/',
+    'DATABASES' => [
+        'default' => [
+            'ENGINE' => env('DB_ENGINE', 'sqlite'),
+            'NAME' => env('DB_NAME', 'storage/db.sqlite3'),
+            'HOST' => env('DB_HOST', '127.0.0.1'),
+            'PORT' => env('DB_PORT'),
+            'USER' => env('DB_USER', ''),
+            'PASSWORD' => env('DB_PASSWORD', ''),
+        ],
+    ],
 ];
 ```
 
@@ -82,6 +92,24 @@ the array and read it with `settings('BLOG_POSTS_PER_PAGE')`.
 | `STORAGE_PATH` | string | `'storage'` | Folder for cache, logs, sessions and compiled templates. |
 | `COMMANDS` | list of class names | `[]` | Extra `manage.php` commands outside app `Commands/` folders. |
 
+### Databases
+
+| Setting | Type | Default | Description |
+|---|---|---|---|
+| `DATABASES` | array | `['default' => ['ENGINE' => 'sqlite', 'NAME' => 'storage/db.sqlite3']]` | Database connections by name; models use `default`. See [Databases](../topics/databases.md). |
+
+Each connection accepts these keys:
+
+| Key | Default | Description |
+|---|---|---|
+| `ENGINE` | `'sqlite'` | `'sqlite'`, `'mysql'` or `'pgsql'` |
+| `NAME` | `'storage/db.sqlite3'` (SQLite) | SQLite file (relative to the project, or `':memory:'`), or the database name |
+| `HOST` | `'127.0.0.1'` | Server host |
+| `PORT` | `3306` / `5432` | Server port |
+| `USER` | `''` | User name |
+| `PASSWORD` | `''` | Password |
+| `OPTIONS` | `[]` | String keys are added to the PDO DSN, integer keys are PDO attributes |
+
 ### Security headers
 
 Used by `SecurityHeadersMiddleware`. See [Middleware](../topics/middleware.md#security-headers).
@@ -98,8 +126,8 @@ Used by `SecurityHeadersMiddleware`. See [Middleware](../topics/middleware.md#se
 | `SECURE_CSP` | string or null | `null` (off) | `Content-Security-Policy` |
 
 !!! note "More settings are coming"
-    `DATABASES`, `CACHE`, `MAIL` and the session and CSRF settings arrive with
-    the features that use them (v0.2 and later).
+    `CACHE`, `MAIL` and the session and CSRF settings arrive with the
+    features that use them.
 
 ### Allowed hosts
 
@@ -135,6 +163,12 @@ SECRET_KEY=6mJ9wS0qVd2-Xc_yLtHn8ZbR4uPeKf1aG7oQiWv3TsYxDlNjCh
 ALLOWED_HOSTS=example.com,.example.org
 APP_URL=https://example.com
 TIME_ZONE=Europe/Paris
+
+# Database (see Databases)
+DB_ENGINE=pgsql
+DB_NAME=blog
+DB_USER=blog
+DB_PASSWORD=secret
 ```
 
 !!! danger "Keep .env out of git"
