@@ -27,7 +27,7 @@ the framework and understand what it does.
 - **Secure by default.** Escaped output, host validation, security headers,
   no stack traces in production.
 - **Everything from the command line.** `php manage.php` runs the server,
-  checks your project and generates code.
+  checks your project, migrates the database and generates code.
 
 ## 30-second example
 
@@ -62,6 +62,15 @@ Open <http://127.0.0.1:8000/hello/Ada/> to see `Hello, Ada!`, and
 <http://127.0.0.1:8000/api/status/> for a JSON response. Strings become HTML
 responses, arrays become JSON, and `reverse('pages:hello', ['name' => 'Ada'])`
 builds the URL `/hello/Ada/` from the route name.
+
+Need a database? Create an app, describe its tables as models, and let
+migrations create them:
+
+```bash
+php manage.php startapp blog         # then add 'blog' to INSTALLED_APPS
+php manage.php makemigrations        # after writing models in apps/blog/models.php
+php manage.php migrate
+```
 
 ## Features
 
@@ -103,6 +112,15 @@ builds the URL `/hello/Ada/` from the route name.
 
     [:octicons-arrow-right-24: Models](topics/models.md)
 
+-   **Migrations**
+
+    ---
+
+    `makemigrations` writes readable migration files from your models,
+    `migrate` applies them, forwards or backwards.
+
+    [:octicons-arrow-right-24: Migrations](topics/migrations.md)
+
 -   **Middleware**
 
     ---
@@ -116,8 +134,8 @@ builds the URL `/hello/Ada/` from the route name.
 
     ---
 
-    Development server, system checks, route listing, key generation and code
-    generators.
+    Development server, system checks, migrations, `startapp`, route
+    listing, key generation and code generators.
 
     [:octicons-arrow-right-24: CLI](cli/overview.md)
 
@@ -142,7 +160,7 @@ tests and documentation.
 | v0.1 | Router, views, request/response, settings, CLI | **Available now** |
 | v0.2 | ORM (SQLite, MySQL, PostgreSQL) | **Available now** |
 | v0.3 | Templates (Django-like syntax) | **Available now** |
-| v0.4 | Migrations and `startapp` | Coming |
+| v0.4 | Migrations and `startapp` | **Available now** |
 | v0.5 | Auth, sessions, CSRF, forms | Coming |
 | v0.6 | Automatic admin | Coming |
 

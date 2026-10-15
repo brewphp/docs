@@ -2,7 +2,7 @@
 
 `manage.php` is the command-line tool of every BrewPHP project, like
 Django's `manage.py`. It runs the development server, checks your project,
-lists routes and generates code.
+migrates the database, lists routes and generates code.
 
 ```bash
 php manage.php <command> [options] [arguments]
@@ -11,7 +11,7 @@ php manage.php <command> [options] [arguments]
 Run it without a command (or with `list`) to see every command:
 
 ```text
-BrewPHP 0.1.0-dev
+BrewPHP 0.4.0-dev
 
 Usage:
   php manage.php <command> [options] [arguments]
@@ -24,14 +24,19 @@ Global options:
   -V, --version           Show the BrewPHP version
 
 Available commands:
-  about         Show versions, environment and installed apps
-  check         Check the project for common problems
-  routes        List every URL pattern with its name, view and middleware
-  serve         Start the development server [runserver]
+  about           Show versions, environment and installed apps
+  check           Check the project for common problems
+  makemigrations  Create migrations from changes to your models
+  migrate         Apply (or unapply) migrations to the database
+  routes          List every URL pattern with its name, view and middleware
+  serve           Start the development server [runserver]
+  showmigrations  List migrations and whether they are applied
+  sqlmigrate      Print the SQL of a migration without running it
+  startapp        Create a new app in apps/<label>/
  key
-  key:generate  Generate a new SECRET_KEY and write it to .env
+  key:generate    Generate a new SECRET_KEY and write it to .env
  make
-  make:command  Create a new manage.php command in an app
+  make:command    Create a new manage.php command in an app
 ```
 
 ## How it works
@@ -103,7 +108,7 @@ php manage.php about [--json]
 
 ```text
 Environment
-  BrewPHP version .................................. 0.1.0-dev
+  BrewPHP version .................................. 0.4.0-dev
   PHP version ......................................... 8.2.34
   Operating system ..................................... Linux
   Project path ............................... /home/ada/myapp
@@ -243,6 +248,120 @@ $ php manage.php make:command PublishPosts --app=blog
   Run it with: php manage.php publish-posts
 ```
 
+### makemigrations
+
+Compare your models with the migrations of each app and write new
+migration files for the differences. See [Migrations](../topics/migrations.md).
+
+```bash
+php manage.php makemigrations [options] [<app>...]
+```
+
+| Argument / option | Meaning |
+|---|---|
+| `app` | Only these apps (one or more labels). Default: every installed app |
+| `--name=VALUE` | Name of the migration after the number, e.g. `add_subtitle`. Lower-case letters, digits and underscores |
+| `--empty` | Write an empty migration to fill in by hand. Needs an app |
+| `--dry-run` | Show what would be written, write nothing |
+| `--check` | Write nothing; exit with `1` when models have changes without migrations (for CI) |
+| `--merge` | Write a merge migration for each app (or each given app) with conflicting migrations |
+
+```text
+$ php manage.php makemigrations
+Migrations for "blog":
+  apps/blog/migrations/0001_initial.php
+    - Create model Author
+    - Create model Post
+Run "php manage.php migrate" to apply them.
+```
+
+Without changes it prints `No changes detected.` When it cannot tell a
+rename from a removal, or needs a value for existing rows, it asks (see
+[Renames](../topics/migrations.md#renames) and
+[One-off defaults](../topics/migrations.md#one-off-defaults)). With
+`--no-interaction` (and with `--check`) it asks nothing: it never assumes
+a rename, and stops instead of guessing a value.
+
+```text
+$ php manage.php makemigrations blog --empty --name=fill_slugs
+Migrations for "blog":
+  apps/blog/migrations/0003_fill_slugs.php
+Run "php manage.php migrate" to apply them.
+```
+
+When an app has more than one latest migration (two branches each added
+one), `makemigrations` and `migrate` stop with a "Conflicting migrations"
+error. `--merge` fixes it: for each app in conflict it writes
+`NNNN_merge_<name1>_<name2>.php`, a migration with no operations that
+depends on every latest migration (`merge_<date>_<time>` when the name
+would be too long). See [Conflicts](../topics/migrations.md#conflicts).
+
+```text
+$ php manage.php makemigrations --merge
+Migrations for "blog":
+  apps/blog/migrations/0004_merge_0003_post_summary_0003_post_tags.php
+    - Merge blog.0003_post_summary, blog.0003_post_tags
+Run "php manage.php migrate" to apply them.
+```
+
+Without conflicts it prints `No conflicts detected to merge.`
+
+### migrate
+
+Apply (or unapply) migrations so the database matches the migration files.
+
+```bash
+php manage.php migrate [options] [<app>] [<migration>]
+```
+
+| Argument / option | Meaning |
+|---|---|
+| `app` | The app to migrate. Default: every app |
+| `migration` | The migration to move to: a name or a prefix such as `0002`, or `zero` to unapply every migration of the app. Earlier migrations move forwards, later ones are unapplied |
+| `--database=VALUE` | The connection from `DATABASES`. Default: `default` |
+| `--fake` | Mark migrations as applied or unapplied without running them |
+| `--plan` | Show the operations that would run, and stop |
+
+```text
+$ php manage.php migrate
+Operations to perform:
+  Apply all migrations: blog
+Running migrations:
+  Applying blog.0001_initial... OK
+  Applying blog.0002_post_slug... OK
+```
+
+```text
+$ php manage.php migrate blog 0001
+Operations to perform:
+  Target blog.0001_initial
+Running migrations:
+  Unapplying blog.0002_post_slug... OK
+```
+
+```text
+$ php manage.php migrate --plan
+Planned operations:
+blog.0001_initial
+    Create model Author
+    Create model Post
+```
+
+When moving backwards, `--plan` lists each migration's operations in the
+order they are undone, last one first.
+
+`migrate` refuses to run, and exits with `1`, while any app has
+conflicting migrations:
+
+```text
+$ php manage.php migrate
+✘ Conflicting migrations in app "blog": blog.0003_post_summary and blog.0003_post_tags. Run "php manage.php makemigrations --merge" to merge them.
+```
+
+After a successful run, `migrate` calls every app's
+[`migrated()` hook](../topics/migrations.md#after-migrating), and warns
+when your models have changes that no migration describes yet.
+
 ### routes
 
 List every URL pattern with its methods, name, view and middleware.
@@ -298,6 +417,98 @@ for Django habits.
 !!! danger "Development only"
     PHP's built-in server is single-threaded and not hardened. Never use it
     in production.
+
+### showmigrations
+
+List the migrations of each app and whether they are applied.
+
+```bash
+php manage.php showmigrations [options] [<app>...]
+```
+
+| Argument / option | Meaning |
+|---|---|
+| `app` | Only these apps (one or more labels). Default: every installed app |
+| `--database=VALUE` | The connection from `DATABASES`. Default: `default` |
+| `--plan` | List every migration in the order `migrate` applies them |
+
+```text
+$ php manage.php showmigrations
+blog
+ [X] 0001_initial
+ [ ] 0002_post_slug
+```
+
+```text
+$ php manage.php showmigrations --plan
+[X] blog.0001_initial
+[ ] blog.0002_post_slug
+```
+
+An installed app without migrations shows `(no migrations)`.
+
+### sqlmigrate
+
+Print the SQL of a migration without running it. The SQL is generated for
+the engine of the connection.
+
+```bash
+php manage.php sqlmigrate [options] <app> <migration>
+```
+
+| Argument / option | Meaning |
+|---|---|
+| `app` | The app label |
+| `migration` | The migration name or a prefix, e.g. `0001` |
+| `--database=VALUE` | The connection whose SQL dialect to use. Default: `default` |
+| `--backwards` | Print the SQL that unapplies the migration |
+
+```text
+$ php manage.php sqlmigrate blog 0001
+-- Create model Author
+CREATE TABLE "blog_author" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "name" varchar(100) NOT NULL);
+-- Create model Post
+CREATE TABLE "blog_post" ("id" integer NOT NULL PRIMARY KEY AUTOINCREMENT, "title" varchar(200) NOT NULL, "body" text NOT NULL, "author_id" bigint NOT NULL, "published_at" datetime NULL, "created_at" datetime NOT NULL, CONSTRAINT "blog_post_author_id_96f44456_fk" FOREIGN KEY ("author_id") REFERENCES "blog_author" ("id") DEFERRABLE INITIALLY DEFERRED);
+CREATE INDEX "blog_post_author_id_b94eb986_idx" ON "blog_post" ("author_id");
+```
+
+Each operation starts with a `--` comment. A `RunPHP` operation shows only
+its comment, because its SQL is only known when the code runs.
+
+### startapp
+
+Create a new app in `apps/<label>/`.
+
+```bash
+php manage.php startapp <label>
+```
+
+| Argument | Meaning |
+|---|---|
+| `label` | The app label: starts with a lower-case letter, then lower-case letters, digits and underscores (at most 50 characters) |
+
+```text
+$ php manage.php startapp blog
+✔ Created the app "blog" in apps/blog/
+
+Next steps:
+  1. Add 'blog' to INSTALLED_APPS in config/settings.php
+  2. Include its URLs in config/urls.php: path('blog/', include_urls('apps/blog/urls.php', namespace: 'blog')),
+  3. Write models in apps/blog/models.php, then run makemigrations and migrate
+```
+
+It creates `App.php`, `models.php`, `views.php`, `urls.php`, the template
+`templates/blog/index.html` and an empty `migrations/` folder (see
+[Creating an app](../getting-started/project-structure.md#creating-an-app)).
+It refuses labels that are already installed or used by BrewPHP's own apps
+(`admin`, `auth`, `brewphp`, `sessions`, `messages`, `static`, `media`),
+and never overwrites an existing folder.
+
+The files come from stubs in the framework's `resources/stubs/app/`. To
+change them, put your own in `stubs/app/` in your project, for example
+`stubs/app/views.php.stub`. The placeholders are `{{ label }}`,
+`{{ namespace }}` (e.g. `Apps\Blog`) and `{{ verbose_name }}` (e.g.
+`Blog`).
 
 ## Writing your own commands
 
@@ -367,12 +578,32 @@ services. Inside `handle()`, `$this->app` is the application.
 
 | Method | Purpose |
 |---|---|
-| `addArgument($name, $description, required: false, default: null)` | A positional argument |
+| `addArgument($name, $description, required: false, default: null, array: false)` | A positional argument. With `array: true` it collects every remaining word as a list |
 | `addOption($name, $description, shortcut: null, value: false, default: null)` | An option. Without `value: true` it is a flag: `true` when given, `false` otherwise |
 | `argument($name)` | Read an argument |
 | `option($name)` | Read an option |
+| `relative($path)` | A path relative to the project, with forward slashes, for messages |
 
 The shortcuts `h`, `n`, `v` and `V` are taken by the global options.
+
+An array argument must be the last one. It is shown as `[<app>...]` in the
+help, and `argument()` returns a list (empty when no word is given):
+
+```php
+protected function configure(): void
+{
+    $this->addArgument('app', 'Only these apps', array: true);
+}
+
+public function handle(): int
+{
+    foreach ($this->argument('app') as $label) {
+        $this->line($label);
+    }
+
+    return self::SUCCESS;
+}
+```
 
 ### Output
 
@@ -427,3 +658,7 @@ to see the stack trace.
 framework. To change what it generates, copy it to `stubs/command.stub` in
 your project and edit it. The placeholders are `{{ namespace }}`,
 `{{ class }}` and `{{ command }}`.
+
+`startapp` works the same way with the stubs in `resources/stubs/app/`
+(`App.php.stub`, `models.php.stub`, `views.php.stub`, `urls.php.stub` and
+`index.html.stub`); override them in `stubs/app/`.

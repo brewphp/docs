@@ -71,6 +71,7 @@ nav:
       - Models: topics/models.md
       - Making queries: topics/queries.md
       - Databases: topics/databases.md
+      - Migrations: topics/migrations.md
   - Reference:
       - Built-in tags and filters: ref/templates-builtins.md
   - CLI:

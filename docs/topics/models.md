@@ -76,7 +76,8 @@ CREATE TABLE "blog_post" (
 )
 ```
 
-and you can use them right away:
+Once `makemigrations` and `migrate` have created the tables (see
+[Creating the tables](#creating-the-tables)), you can use them:
 
 ```php
 use Apps\Blog\Author;
@@ -114,45 +115,29 @@ Registry::get('blog.Post');  // one model class by label
 
 ## Creating the tables
 
-Migrations (`makemigrations` and `migrate`) arrive in v0.4. Until then,
-create tables with the **schema editor**, for example from a small
-`manage.php` command:
-
-```php title="apps/blog/Commands/CreateTablesCommand.php"
-<?php
-
-declare(strict_types=1);
-
-namespace Apps\Blog\Commands;
-
-use Apps\Blog\Author;
-use Apps\Blog\Post;
-use BrewPHP\Console\Command;
-
-final class CreateTablesCommand extends Command
-{
-    public string $name = 'blog:create-tables';
-
-    public string $description = 'Create the tables of the blog app';
-
-    public function handle(): int
-    {
-        $editor = db()->schemaEditor();
-        $editor->createModel(Author::class);  // referenced tables first
-        $editor->createModel(Post::class);
-        $this->success('Tables created.');
-
-        return self::SUCCESS;
-    }
-}
-```
+Create and change tables with **migrations**, like in Django. After
+writing or changing models, run:
 
 ```bash
-php manage.php blog:create-tables
+php manage.php makemigrations   # write migration files from your models
+php manage.php migrate          # apply them to the database
 ```
 
-The schema editor can also change existing tables; see
-[The schema editor](#the-schema-editor) below.
+```text
+$ php manage.php makemigrations
+Migrations for "blog":
+  apps/blog/migrations/0001_initial.php
+    - Create model Author
+    - Create model Post
+Run "php manage.php migrate" to apply them.
+```
+
+Run both commands again after every change to a model: a new field, a
+removed field, a new index. [Migrations](migrations.md) explains the
+workflow, renames, data migrations and moving backwards.
+
+The [schema editor](#the-schema-editor) is the lower-level tool that
+migrations use. You rarely need it directly.
 
 ## Fields
 
@@ -511,7 +496,9 @@ $meta->reverseRelations();  // ForeignKeys of other models pointing here
 ## The schema editor
 
 The schema editor creates and changes tables from model definitions. It is
-what migrations will use in v0.4, and what you use until then.
+the lower-level tool that [migrations](migrations.md) use to run their
+operations. Use migrations for your project's tables; reach for the schema
+editor in tests or one-off scripts.
 
 ```php
 $editor = db()->schemaEditor();
@@ -537,7 +524,12 @@ $editor->addField(Post::class, Post::meta()->field('subtitle'));
 ```
 
 A new non-null field needs a default (not a closure) when the table already
-has rows; the default becomes the value of the existing rows.
+has rows; the default becomes the value of the existing rows. When
+`alterField()` makes a column non-null, rows that are `NULL` get the new
+field's default first; without a default, it fails if any row is `NULL`.
+On an empty table, or when no row is `NULL`, no default is needed, on
+every engine: SQLite now behaves like MySQL and PostgreSQL here and only
+fails when a row actually needs a value.
 
 SQLite cannot alter most column properties, so on SQLite `alterField()`,
 `removeField()` and some `addField()` calls rebuild the table: create a new

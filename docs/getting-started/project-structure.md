@@ -170,6 +170,11 @@ public function ready(\BrewPHP\Core\Application $app): void
 }
 ```
 
+Override `migrated(Application $app)` to run code after every successful
+`migrate`, for example to create rows the app needs (see
+[After migrating](../topics/migrations.md#after-migrating)).
+`migrationsPath()` returns the app's `migrations/` folder.
+
 An app published as a Composer package is installed by its class name
 instead of a label, for example `Acme\Blog\BlogApp::class`. Its folder and
 namespace are taken from the class.
@@ -185,8 +190,45 @@ namespace are taken from the class.
 | `models.php` | [Models](../topics/models.md) |
 | `Models/` | Models, one class per file (loaded at boot like `models.php`) |
 | `Commands/` | `manage.php` commands, discovered automatically |
+| `migrations/` | [Migrations](../topics/migrations.md): `0001_initial.php`, `0002_...`, written by `makemigrations` |
 | `tests/` | Tests of the app |
-| `migrations/`, `forms.php`, `admin.php`, `static/<label>/` | Coming in later releases |
+| `forms.php`, `admin.php`, `static/<label>/` | Coming in later releases |
+
+### Creating an app
+
+`startapp` creates a new app, like Django's `startapp`:
+
+```bash
+php manage.php startapp blog
+```
+
+```text
+apps/blog/
+├── App.php                 app configuration
+├── models.php              models (with a commented example)
+├── views.php               an index() view
+├── urls.php                a route to the view
+├── templates/
+│   └── blog/
+│       └── index.html
+└── migrations/             empty, with a .gitkeep
+```
+
+The label must start with a lower-case letter and contain only lower-case
+letters, digits and underscores, because it becomes the folder, the
+namespace (`blog_posts` → `Apps\BlogPosts`) and the start of table names.
+Then follow the steps the command prints:
+
+1. add `'blog'` to `INSTALLED_APPS` in `config/settings.php`;
+2. include its URLs in `config/urls.php`:
+   `path('blog/', include_urls('apps/blog/urls.php', namespace: 'blog'))`;
+3. write models in `apps/blog/models.php`, then run `makemigrations` and
+   `migrate`.
+
+Every file comes from a stub in the framework's `resources/stubs/app/`. To
+change what `startapp` generates, put your own version in `stubs/app/` in
+your project, for example `stubs/app/views.php.stub`. See
+[startapp](../cli/overview.md#startapp).
 
 ## Templates
 

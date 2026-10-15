@@ -8,10 +8,46 @@ in the framework repository.
 
 ## [Unreleased]
 
-The v0.1 foundation, the v0.2 ORM and the v0.3 template language.
+The v0.1 foundation, the v0.2 ORM, the v0.3 template language and the v0.4
+migrations and `startapp`.
 
 ### Added
 
+- **Migrations (v0.4):** migration files in each app's `migrations/`
+  folder (`0001_initial.php`...), each returning an anonymous `Migration`
+  class with `$dependencies`, `$initial`, `$atomic` and `operations()`;
+  the operations `CreateModel`, `DeleteModel`, `RenameModel`,
+  `AlterModelTable`, `AddField`, `RemoveField`, `AlterField`,
+  `RenameField`, `AddIndex`, `RemoveIndex`, `RunSQL` and `RunPHP`, with
+  one-off defaults (`preserveDefault: false`); historical model states;
+  dependency order, conflict and cycle detection; the `brewphp_migrations`
+  table; forwards, backwards and `zero`, fake runs, one transaction per
+  migration on SQLite and PostgreSQL (with foreign key checks on SQLite)
+  and a consistent-history check. Only what changes the database is
+  recorded: options such as `helpText`, `choices` or `onDelete` need no
+  migration. See [Migrations](topics/migrations.md).
+- **Automatic migrations (v0.4):** `makemigrations` detects new, removed
+  and renamed models and fields, changed fields, tables and indexes, asks
+  about renames and values for new non-null fields, and writes files that
+  contain only plain values (through `var_export()`).
+- **Migration commands (v0.4):** `makemigrations` (apps, `--name`,
+  `--empty`, `--dry-run`, `--check` for CI, `--merge` for conflicting
+  migrations), `migrate` (app, target migration or `zero`, `--fake`,
+  `--plan`, `--database`, a refusal to run while migrations conflict, and a
+  warning for model changes without migrations), `showmigrations` (`--plan`) and
+  `sqlmigrate` (`--backwards`). Migrations are never written into the
+  framework or a Composer package.
+- **`startapp` (v0.4):** creates `apps/<label>/` with `App.php`,
+  `models.php`, `views.php`, `urls.php`, a template and `migrations/`, from
+  stubs a project can override in `stubs/app/`. Labels are validated (no
+  path tricks, no reserved or installed labels).
+- **Apps (v0.4):** `AppConfig::migrationsPath()` and the
+  `AppConfig::migrated()` hook, called after every successful `migrate`.
+- **CLI (v0.4):** array arguments (`addArgument(array: true)`, shown as
+  `[<app>...]`) and `Command::relative()`.
+- **Database (v0.4):** `Connection::hasTable()`; `SchemaEditor::execute()`,
+  `connection()` and `isCollectOnly()` are public;
+  `Field::deconstructForMigration()`.
 - **Templates (v0.3):** a Django-like template language compiled to PHP and
   cached in `storage/templates/`: variables with dotted lookups into
   arrays, objects, models, QuerySets and pages; filters; template
@@ -51,7 +87,8 @@ The v0.1 foundation, the v0.2 ORM and the v0.3 template language.
   bulk `update()` and `delete()`, `getOrCreate()`, `updateOrCreate()`,
   `paginate()`, `raw()` and `get_object_or_404()`.
 - **Schema editor (v0.2):** create, change and drop tables from models on
-  every engine (SQLite through table rebuilds), until migrations arrive.
+  every engine (SQLite through table rebuilds); the lower-level tool that
+  migrations use.
 - **Pagination (v0.2):** `Paginator` and `Page`.
 - **CLI (v0.2):** `about` shows the database; `check` validates
   `DATABASES`.
@@ -86,3 +123,10 @@ The v0.1 foundation, the v0.2 ORM and the v0.3 template language.
   apps and the `COMMANDS` setting, and the commands `about`, `check`
   (system checks, `--deploy`), `key:generate`, `make:command`, `routes` and
   `serve` / `runserver`.
+
+### Changed
+
+- **SQLite schema editor (v0.4):** adding a non-null column without a
+  default to an empty table, or making a column non-null without a default,
+  now works as on MySQL and PostgreSQL; it only fails when a row needs a
+  value.

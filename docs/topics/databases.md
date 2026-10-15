@@ -78,6 +78,13 @@ best choice to start a project and for tests.
 - The folder of the file must exist; the file is created on first use.
 - Keep the file out of git (the skeleton's `.gitignore` does).
 - BrewPHP turns on SQLite's foreign key checks (`PRAGMA foreign_keys = ON`).
+  During a migration they are off, and `PRAGMA foreign_key_check` runs
+  before the migration's transaction commits (see
+  [Transactions](migrations.md#transactions)).
+- Most column changes rebuild the table (see
+  [The schema editor](models.md#the-schema-editor)). Adding a non-null
+  column without a default, or making a column non-null, only fails when a
+  row actually needs a value, as on MySQL and PostgreSQL.
 - `contains`, `startswith` and `endswith` are case-sensitive (they use
   `GLOB`); the `i...` lookups ignore case for ASCII letters only.
 - Requires the `pdo_sqlite` extension.
@@ -102,7 +109,8 @@ best choice to start a project and for tests.
   case-insensitive; `exact` may therefore ignore case, while `contains`,
   `startswith` and `endswith` are made case-sensitive with `LIKE BINARY`.
 - Schema changes (`CREATE TABLE`, `ALTER TABLE`) are committed immediately
-  and cannot be rolled back.
+  and cannot be rolled back, so a migration that fails halfway is not
+  undone (see [Transactions](migrations.md#transactions)).
 - Requires the `pdo_mysql` extension.
 
 ## PostgreSQL
@@ -121,7 +129,8 @@ best choice to start a project and for tests.
 - New primary keys are read with `INSERT ... RETURNING`.
 - Case-insensitive lookups use `ILIKE`; `JsonField` uses `jsonb` and
   `UUIDField` the native `uuid` type.
-- Schema changes run inside transactions and can be rolled back.
+- Schema changes run inside transactions and can be rolled back; each
+  migration runs in one transaction.
 - Requires the `pdo_pgsql` extension.
 
 ## Column types per engine
@@ -158,7 +167,8 @@ $orders = db('legacy')->select('SELECT * FROM orders WHERE status = ?', ['open']
 ```
 
 Models and QuerySets use the `default` connection; other connections are
-for [raw SQL](queries.md#raw-sql).
+for [raw SQL](queries.md#raw-sql). The migration commands accept
+`--database=NAME` to work on another connection.
 
 ## Connections
 
@@ -169,7 +179,7 @@ db()->engine();          // "sqlite", "mysql" or "pgsql"
 db()->pdo();             // the PDO object (connects if needed)
 db()->isConnected();
 db()->disconnect();      // the next query reconnects
-db()->schemaEditor();    // create and change tables, see Models
+db()->schemaEditor();    // create and change tables directly, see Models
 ```
 
 Its query methods (`select()`, `selectOne()`, `scalar()`, `statement()`,
@@ -202,8 +212,24 @@ $app = new Application($projectPath, new Settings([
     'DATABASES' => ['default' => ['ENGINE' => 'sqlite', 'NAME' => ':memory:']],
 ]));
 $app->boot();
+```
 
+Then create the tables by running the project's
+[migrations](migrations.md), so tests use the same schema as production:
+
+```php
+use BrewPHP\Db\Migrations\Migrator;
+
+$executor = (new Migrator($app))->executor();
+$executor->migrate($executor->plan());   // like "php manage.php migrate"
+```
+
+For a quick test of a single model, the lower-level
+[schema editor](models.md#the-schema-editor) creates tables straight from
+the model classes, without migration files:
+
+```php
 $editor = $app->db()->schemaEditor();
-$editor->createModel(Author::class);
+$editor->createModel(Author::class);   // referenced tables first
 $editor->createModel(Post::class);
 ```
