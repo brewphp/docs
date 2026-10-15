@@ -11,7 +11,7 @@ php manage.php <command> [options] [arguments]
 Run it without a command (or with `list`) to see every command:
 
 ```text
-BrewPHP 0.5.0-dev
+BrewPHP 0.6.0-dev
 
 Usage:
   php manage.php <command> [options] [arguments]
@@ -115,7 +115,7 @@ php manage.php about [--json]
 
 ```text
 Environment
-  BrewPHP version .................................. 0.5.0-dev
+  BrewPHP version .................................. 0.6.0-dev
   PHP version ......................................... 8.2.34
   Operating system ..................................... Linux
   Project path ............................... /home/ada/myapp
@@ -126,6 +126,7 @@ Environment
   Database ............................ sqlite (storage/db.sqlite3)
 
 Installed apps
+  admin ........................................ brewphp.admin
   auth .......................................... brewphp.auth
   sessions .................................. brewphp.sessions
   pages ........................................... apps.pages
@@ -216,6 +217,12 @@ CI. The checks:
 | `security.W016` | warning (deploy) | `CSRF_COOKIE_SECURE` is off while `CsrfViewMiddleware` is used (and `CSRF_USE_SESSIONS` is off) |
 | `auth.W001` | warning | `brewphp.auth` is installed but `AuthenticationMiddleware` is not in `MIDDLEWARE` |
 | `auth.E001` | error | `AuthenticationMiddleware` comes before `SessionMiddleware` (or the latter is missing) |
+| `admin.E001` | error | `brewphp.admin` is installed without `brewphp.auth` |
+| `admin.E002` | error | `brewphp.admin` is installed but `SessionMiddleware` is not in `MIDDLEWARE` |
+| `admin.E003` | error | `brewphp.admin` is installed but `AuthenticationMiddleware` is not in `MIDDLEWARE` |
+| `admin.E004` | error | `brewphp.admin` is installed but `CsrfViewMiddleware` is not in `MIDDLEWARE` |
+| `admin.E108` | error | a `listDisplay` or `listFilter` entry of a ModelAdmin is neither a model field nor an admin method |
+| `admin.E116` | error | a `listFilter` entry of a ModelAdmin is not a model field |
 | `db.E001` | error | `DATABASES` has no `default` connection |
 | `db.E002` | error | a `DATABASES` entry is not an array or has an unknown `ENGINE` |
 | `db.E003` | error | the PDO driver of a database engine is not installed |
@@ -259,8 +266,9 @@ See [Sessions](../topics/sessions.md#expiry-and-clearsessions).
 
 ### createsuperuser
 
-Create a user with `is_staff` and `is_superuser` set, so with every
-permission (needs `brewphp.auth`).
+Create a user with `is_staff` and `is_superuser` set, so with access to
+the [admin](../topics/admin.md) and every permission (needs
+`brewphp.auth`).
 
 ```bash
 php manage.php createsuperuser [--username=VALUE] [--email=VALUE]
@@ -582,7 +590,8 @@ Next steps:
   3. Write models in apps/blog/models.php, then run makemigrations and migrate
 ```
 
-It creates `App.php`, `models.php`, `views.php`, `urls.php`, the template
+It creates `App.php`, `models.php`, `views.php`, `urls.php`, `admin.php`
+(for [admin](../topics/admin.md) registrations), the template
 `templates/blog/index.html` and an empty `migrations/` folder (see
 [Creating an app](../getting-started/project-structure.md#creating-an-app)).
 It refuses labels that are already installed or used by BrewPHP's own apps
@@ -745,5 +754,5 @@ your project and edit it. The placeholders are `{{ namespace }}`,
 `{{ class }}` and `{{ command }}`.
 
 `startapp` works the same way with the stubs in `resources/stubs/app/`
-(`App.php.stub`, `models.php.stub`, `views.php.stub`, `urls.php.stub` and
-`index.html.stub`); override them in `stubs/app/`.
+(`App.php.stub`, `models.php.stub`, `views.php.stub`, `urls.php.stub`,
+`admin.php.stub` and `index.html.stub`); override them in `stubs/app/`.

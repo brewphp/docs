@@ -9,10 +9,42 @@ in the framework repository.
 ## [Unreleased]
 
 The v0.1 foundation, the v0.2 ORM, the v0.3 template language, the v0.4
-migrations and `startapp`, and the v0.5 sessions, CSRF protection,
-authentication and forms.
+migrations and `startapp`, the v0.5 sessions, CSRF protection,
+authentication and forms, and the v0.6 automatic admin.
 
 ### Added
+
+- **Admin (v0.6):** the `brewphp.admin` app, an automatic admin like
+  Django's: `AdminSite` (mounted with `AdminSite::default()->urls()` under
+  the `admin` namespace) with a dashboard, app pages, change lists,
+  add/change/delete pages with a confirmation that lists cascaded objects,
+  object history, and staff login, logout (POST only) and password change;
+  `ModelAdmin` with `listDisplay` (fields, `__str__` or admin methods),
+  `listDisplayLinks`, `listFilter` (booleans, choices, foreign keys, date
+  ranges, values), `searchFields` (`^`, `=` and related lookups),
+  `ordering`, `listPerPage`, `fields`, `exclude`, `readonlyFields`,
+  `labels`, `formClass`, custom `actions` and "Delete selected", and the
+  hooks `getQueryset()`, `getFields()`, `getReadonlyFields()`, `getForm()`,
+  `saveModel()`, `saveRelated()`, `deleteModel()` and the
+  `has*Permission()` methods; the `#[Register]` attribute and
+  auto-discovery of each app's `admin.php`; `UserAdmin` and `GroupAdmin`;
+  the `LogEntry` model (`admin_log_entry`) for recent actions and history;
+  overridable templates in `admin/`, and a stylesheet and script served
+  from a fixed list (no inline code, so a strict CSP works); the
+  `admin.E001` to `admin.E004`, `admin.E108` and `admin.E116` checks. See
+  [Admin](topics/admin.md).
+- **Admin security (v0.6):** only active staff get in; every page checks
+  the model's view/add/change/delete permission; `getQueryset()` limits
+  every page and action (rows outside it are 404s); filters, sorting and
+  actions only accept what the ModelAdmin declares; deleting needs the
+  delete permission of every cascaded model; staff who are not superusers
+  cannot see superusers or change superuser status, groups or permissions;
+  admin pages are never cached. See [Admin](topics/admin.md#security).
+- **`startapp` (v0.6):** also writes an `admin.php`.
+- **Forms (v0.6):** `AuthenticationForm::getUserUnchecked()` for subclasses
+  that add login rules.
+- **Database (v0.6):** `Collector::objects()` lists what a deletion would
+  remove.
 
 - **Sessions (v0.5):** `SessionMiddleware` and `$request->session()`
   (`get`, `set`, `has`, `remove`, `pull`, `clear`, `flush`, `cycleKey`),
@@ -174,6 +206,34 @@ authentication and forms.
   apps and the `COMMANDS` setting, and the commands `about`, `check`
   (system checks, `--deploy`), `key:generate`, `make:command`, `routes` and
   `serve` / `runserver`.
+
+### Security
+
+- **Login throttling (v0.6):** an attempt is counted before the password is
+  checked, in one locked step, so parallel requests cannot exceed
+  `AUTH_LOGIN_ATTEMPTS`; spelling variants of a username that the database
+  treats as equal share one counter. See
+  [Login throttling](topics/auth.md#login-throttling).
+- **Admin (v0.6):** the "all values" filter only lists values of rows from
+  `getQueryset()`; the change list needs view (or change) permission; the
+  admin login gives the same error for a wrong password and a non-staff
+  account; bulk actions check the per-object permission of every selected
+  object; admin pages send `X-Frame-Options: DENY` even without
+  `SecurityHeadersMiddleware`. See [Admin](topics/admin.md#security).
+- **Redirects (v0.6):** `Redirects::isSafe()` refuses URLs with surrounding
+  spaces or line breaks (a crafted `next` could make login fail).
+- **Uploads (v0.6):** `UploadedFile::hashName()` drops extensions a web
+  server could execute (php, phtml, phar, cgi...).
+- **Signing (v0.6):** timestamped signatures from the future are refused.
+
+### Fixed
+
+- **CLI (v0.6):** password prompts work with piped input.
+- **Forms (v0.6):** a field without a limit no longer removes `maxlength`,
+  `min` or `max` set on its widget.
+- **Admin (v0.6):** `AdminSite::default()` (and `AdminSite::of()`) return
+  the same site whatever the order of `INSTALLED_APPS`; view-only pages also
+  show `readonlyFields`; recent actions use the model's verbose name.
 
 ### Changed
 

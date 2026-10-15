@@ -84,6 +84,20 @@ php manage.php createsuperuser
 path('dashboard/', dashboard(...), name: 'dashboard', middleware: [LoginRequired::class]),
 ```
 
+The same account logs into the automatic admin at `/admin/`. Register a
+model in its app's `admin.php` to list, search, add, change and delete its
+rows there:
+
+```php title="apps/blog/admin.php"
+#[Register(Post::class)]
+final class PostAdmin extends ModelAdmin
+{
+    public array $listDisplay = ['title', 'status', 'published_at'];
+    public array $listFilter = ['status'];
+    public array $searchFields = ['title'];
+}
+```
+
 ## Features
 
 <div class="grid cards" markdown>
@@ -151,6 +165,15 @@ path('dashboard/', dashboard(...), name: 'dashboard', middleware: [LoginRequired
 
     [:octicons-arrow-right-24: Authentication](topics/auth.md)
 
+-   **Automatic admin**
+
+    ---
+
+    A staff back office built from your models: lists with search,
+    filters and actions, edit forms, permissions and change history.
+
+    [:octicons-arrow-right-24: Admin](topics/admin.md)
+
 -   **Security**
 
     ---
@@ -201,5 +224,7 @@ tests and documentation.
 | v0.3 | Templates (Django-like syntax) | **Available now** |
 | v0.4 | Migrations and `startapp` | **Available now** |
 | v0.5 | Auth, sessions, CSRF, forms | **Available now** |
-| v0.6 | Automatic admin | Coming |
+| v0.6 | Automatic admin | **Available now** |
+
+Every version on the roadmap is available.
 

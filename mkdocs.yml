@@ -75,6 +75,7 @@ nav:
       - Forms: topics/forms.md
       - Sessions: topics/sessions.md
       - Authentication: topics/auth.md
+      - Admin: topics/admin.md
       - Security: topics/security.md
       - Testing: topics/testing.md
   - Reference:

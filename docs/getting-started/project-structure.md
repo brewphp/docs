@@ -193,7 +193,8 @@ namespace are taken from the class.
 | `migrations/` | [Migrations](../topics/migrations.md): `0001_initial.php`, `0002_...`, written by `makemigrations` |
 | `tests/` | Tests of the app |
 | `forms.php` | [Forms](../topics/forms.md) (loaded at boot like `models.php`) |
-| `admin.php`, `static/<label>/` | Coming in later releases |
+| `admin.php` | [Admin](../topics/admin.md) registrations: `ModelAdmin` classes with `#[Register]`, loaded by `brewphp.admin` |
+| `static/<label>/` | Coming in a later release |
 
 ### Creating an app
 
@@ -209,6 +210,7 @@ apps/blog/
 ├── models.php              models (with a commented example)
 ├── views.php               an index() view
 ├── urls.php                a route to the view
+├── admin.php               admin registrations (with a commented example)
 ├── templates/
 │   └── blog/
 │       └── index.html
@@ -225,6 +227,9 @@ Then follow the steps the command prints:
    `path('blog/', include_urls('apps/blog/urls.php', namespace: 'blog'))`;
 3. write models in `apps/blog/models.php`, then run `makemigrations` and
    `migrate`.
+
+To manage the new models in the [admin](../topics/admin.md), register them
+in `apps/blog/admin.php`.
 
 Every file comes from a stub in the framework's `resources/stubs/app/`. To
 change what `startapp` generates, put your own version in `stubs/app/` in

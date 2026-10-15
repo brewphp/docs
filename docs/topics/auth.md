@@ -96,7 +96,9 @@ Password (again):
 ✔ Superuser created successfully.
 ```
 
-Log in at <http://127.0.0.1:8000/accounts/login/>.
+Log in at <http://127.0.0.1:8000/accounts/login/>. With `brewphp.admin`
+installed, the same superuser can also manage users, groups and your
+models in the [admin](admin.md).
 
 ## Users
 
@@ -110,7 +112,7 @@ Log in at <http://127.0.0.1:8000/accounts/login/>.
 | `email` | `EmailField`, optional | |
 | `first_name`, `last_name` | `CharField(150)`, optional | |
 | `is_active` | `BooleanField`, default `true` | Inactive users cannot log in and have no permissions. Unset it instead of deleting accounts. |
-| `is_staff` | `BooleanField`, default `false` | May log into the admin (coming in v0.6). |
+| `is_staff` | `BooleanField`, default `false` | May log into the [admin](admin.md) (when active). |
 | `is_superuser` | `BooleanField`, default `false` | Has every permission without being given any. |
 | `last_login` | `DateTimeField`, nullable | Set by `Auth::login()`. |
 | `date_joined` | `DateTimeField` | Set when the user is created. |
@@ -188,7 +190,9 @@ of the installed apps (like Django): `add_<model>`, `change_<model>`,
 | `blog.view_post` | Can view post |
 
 These permissions mean nothing on their own: your views decide what each
-one allows (see [Protecting views](#protecting-views)).
+one allows (see [Protecting views](#protecting-views)). The
+[admin](admin.md#permissions) uses them for each model's pages, and is the
+easiest place to give them to users and groups.
 
 ### Your own permissions
 
@@ -643,9 +647,12 @@ final class NoSeasonValidator implements PasswordValidator
 
 ## Login throttling
 
-`AuthenticationForm` counts failed logins per username **and** IP address.
-After `AUTH_LOGIN_ATTEMPTS` failures it refuses to check passwords for that
-pair until `AUTH_LOGIN_LOCKOUT` seconds after the first failure:
+`AuthenticationForm` counts login attempts per username **and** IP address.
+Each attempt is counted before the password is checked, in one locked
+step, so parallel requests cannot slip past the limit. After
+`AUTH_LOGIN_ATTEMPTS` attempts without a successful login it refuses to
+check passwords for that pair until `AUTH_LOGIN_LOCKOUT` seconds after the
+first one:
 
 ```text
 Too many failed login attempts. Try again in 15 minute(s).
@@ -653,11 +660,14 @@ Too many failed login attempts. Try again in 15 minute(s).
 
 | Setting | Default | Description |
 |---|---|---|
-| `AUTH_LOGIN_ATTEMPTS` | `5` | Failures allowed in the window. `0` turns throttling off. |
+| `AUTH_LOGIN_ATTEMPTS` | `5` | Attempts allowed in the window. `0` turns throttling off. |
 | `AUTH_LOGIN_LOCKOUT` | `900` | Length of the window, in seconds. |
 
-A successful login clears the counter. The counters are small files in
-`storage/cache/ratelimit/`, kept by the [RateLimiter](security.md#rate-limiting);
+A successful login clears the counter. Attempts are counted under the
+stored username when one matches, so spelling variants that the database
+treats as equal (such as `Ann` and `ann`) share one counter. The counters
+are small files in `storage/cache/ratelimit/`, kept by the
+[RateLimiter](security.md#rate-limiting);
 on several web servers, each one counts on its own. `Auth::authenticate()`
 called directly is not throttled.
 

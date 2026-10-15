@@ -216,6 +216,16 @@ say whether the username exists. A password change logs out the user's
 other sessions. Turn on the password validators. See
 [Authentication](auth.md#password-hashing).
 
+## The admin
+
+The [admin](admin.md) only lets active staff in, checks the model
+permissions on every page, limits every page and action to the
+ModelAdmin's `getQueryset()`, ignores filters, sort columns and actions it
+does not declare, posts every form (logout included) with a CSRF token,
+and is never cached. Its stylesheet and script are files, not inline code,
+so it works under a strict `SECURE_CSP`. See
+[Admin security](admin.md#security).
+
 ## Open redirects
 
 Redirecting to a URL taken from the request (`?next=/dashboard/`) is an
@@ -235,7 +245,8 @@ A URL is safe when it is a path on this site (`/dashboard/`) or an `http`
 or `https` URL whose host (with port) is the request's, or one of the hosts
 in the third argument: `Redirects::isSafe($next, $request, ['shop.example.com'])`.
 URLs such as `//evil.example`, `/\evil.example`, `javascript:...`, URLs
-with control characters or user names, and (on an HTTPS page) plain `http`
+with control characters (such as CR or LF), surrounding spaces or user
+names, and (on an HTTPS page) plain `http`
 URLs are refused. The login and logout views already do this for `next`.
 
 ## Signing
@@ -274,7 +285,7 @@ try {
 |---|---|
 | `Signer::make($salt)` | A signer using `SECRET_KEY`. Without a key it throws `ImproperlyConfigured`. |
 | `sign($value)` / `unsign($signed)` | Add a signature / check it and return the value. |
-| `signWithTime($value)` / `unsignWithTime($signed, $maxAge)` | The same, with a timestamp; `SignatureExpired` when older than `$maxAge` seconds. |
+| `signWithTime($value)` / `unsignWithTime($signed, $maxAge)` | The same, with a timestamp; `SignatureExpired` when older than `$maxAge` seconds; a timestamp more than 60 seconds in the future is refused with `BadSignature`. |
 | `dumps($data)` / `loads($signed)` | Sign JSON-encodable data as a URL-safe string, and read it back. |
 
 The **salt** separates uses: a token signed with the salt
@@ -385,5 +396,7 @@ Also, outside of what the checks can see:
 - keep `.env` out of git, and give the production site its own
   `SECRET_KEY`;
 - turn on `AUTH_PASSWORD_VALIDATORS`;
+- give staff users only the [admin permissions](admin.md#permissions)
+  they need, and keep superusers few;
 - run `clearsessions` from cron if you set `SESSION_GC_PROBABILITY` to `0`;
 - never serve uploaded files from a folder where PHP runs.
