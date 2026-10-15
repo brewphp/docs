@@ -9,7 +9,11 @@ default value.
 
 declare(strict_types=1);
 
+use BrewPHP\Auth\AuthenticationMiddleware;
+use BrewPHP\Auth\Validators;
 use BrewPHP\Middleware\SecurityHeadersMiddleware;
+use BrewPHP\Security\CsrfViewMiddleware;
+use BrewPHP\Sessions\SessionMiddleware;
 use BrewPHP\Templates\ContextProcessors;
 
 return [
@@ -17,10 +21,15 @@ return [
     'SECRET_KEY' => env('SECRET_KEY', ''),
     'ALLOWED_HOSTS' => array_values(array_filter(array_map('trim', explode(',', (string) env('ALLOWED_HOSTS', ''))))),
     'INSTALLED_APPS' => [
+        'brewphp.auth',
+        'brewphp.sessions',
         'pages',
     ],
     'MIDDLEWARE' => [
         SecurityHeadersMiddleware::class,
+        SessionMiddleware::class,
+        CsrfViewMiddleware::class,
+        AuthenticationMiddleware::class,
     ],
     'ROOT_URLCONF' => 'config/urls.php',
     'TEMPLATES' => [
@@ -29,7 +38,19 @@ return [
         'STRICT' => false,
         'CONTEXT_PROCESSORS' => [
             [ContextProcessors::class, 'request'],
+            [ContextProcessors::class, 'auth'],
+            [ContextProcessors::class, 'messages'],
         ],
+    ],
+    'SESSION_COOKIE_SECURE' => env('SECURE_COOKIES', false),
+    'CSRF_COOKIE_SECURE' => env('SECURE_COOKIES', false),
+    'LOGIN_URL' => 'login',
+    'LOGIN_REDIRECT_URL' => '/',
+    'AUTH_PASSWORD_VALIDATORS' => [
+        new Validators\UserAttributeSimilarityValidator(),
+        new Validators\MinimumLengthValidator(minLength: 10),
+        new Validators\CommonPasswordValidator(),
+        new Validators\NumericPasswordValidator(),
     ],
     'APP_URL' => env('APP_URL', 'http://127.0.0.1:8000'),
     'TIME_ZONE' => env('TIME_ZONE', 'UTC'),
@@ -83,7 +104,7 @@ the array and read it with `settings('BLOG_POSTS_PER_PAGE')`.
 | Setting | Type | Default | Description |
 |---|---|---|---|
 | `DEBUG` | bool | `false` | Show detailed error pages with stack traces. **Never** `true` in production. |
-| `SECRET_KEY` | string | `''` | Secret used to sign values (sessions, password-reset links). Generate it with `php manage.php key:generate`. |
+| `SECRET_KEY` | string | `''` | Secret used to sign values ([`Signer`](../topics/security.md#signing)) and to tie logins to the password. Changing it invalidates signatures and logs every user out. Generate it with `php manage.php key:generate`. |
 | `ALLOWED_HOSTS` | list of strings | `[]` | Host names this site serves. See [Allowed hosts](#allowed-hosts). |
 | `INSTALLED_APPS` | list of strings | `[]` | Apps of the project: labels such as `'blog'` (folder `apps/blog/`) or `AppConfig` class names. |
 | `MIDDLEWARE` | list | `[]` | Middleware run around every request, outermost first. See [Middleware](../topics/middleware.md). |
@@ -95,7 +116,7 @@ the array and read it with `settings('BLOG_POSTS_PER_PAGE')`.
 | `LANGUAGE` | string | `'en'` | Default language of the site. |
 | `STATIC_URL` | string | `'/static/'` | URL prefix of static files, used by `{% static %}`. |
 | `MEDIA_URL` | string | `'/media/'` | URL prefix of uploaded files. |
-| `STORAGE_PATH` | string | `'storage'` | Folder for cache, logs, sessions and compiled templates. |
+| `STORAGE_PATH` | string | `'storage'` | Folder for cache, logs, sessions, rate-limit counters and compiled templates. |
 | `COMMANDS` | list of class names | `[]` | Extra `manage.php` commands outside app `Commands/` folders. |
 
 ### Templates
@@ -157,9 +178,59 @@ Used by `SecurityHeadersMiddleware`. See [Middleware](../topics/middleware.md#se
 | `SECURE_HSTS_PRELOAD` | bool | `false` | Adds `; preload` |
 | `SECURE_CSP` | string or null | `null` (off) | `Content-Security-Policy` |
 
+### Sessions
+
+Used by `SessionMiddleware`. See [Sessions](../topics/sessions.md#settings).
+
+| Setting | Type | Default | Description |
+|---|---|---|---|
+| `SESSION_ENGINE` | string | `'file'` | `'file'` (`storage/sessions/`), `'database'` (needs `brewphp.sessions`), `'array'` (tests) or a `SessionStore` class name |
+| `SESSION_COOKIE_NAME` | string | `'brewphp_session'` | Name of the session cookie |
+| `SESSION_COOKIE_AGE` | int | `1209600` (2 weeks) | Lifetime of the session and its cookie, in seconds |
+| `SESSION_COOKIE_SECURE` | bool | `false` | Only send the cookie over HTTPS. `true` in production |
+| `SESSION_COOKIE_HTTPONLY` | bool | `true` | Hide the cookie from JavaScript |
+| `SESSION_COOKIE_SAMESITE` | string | `'Lax'` | `'Lax'`, `'Strict'` or `'None'` |
+| `SESSION_COOKIE_DOMAIN` | string or null | `null` | Cookie domain, e.g. `'.example.com'`; `null` for the current host |
+| `SESSION_COOKIE_PATH` | string | `'/'` | Cookie path |
+| `SESSION_EXPIRE_AT_BROWSER_CLOSE` | bool | `false` | Send a cookie without an expiry date |
+| `SESSION_SAVE_EVERY_REQUEST` | bool | `false` | Save the session on every request that uses it, not only when it changed |
+| `SESSION_GC_PROBABILITY` | int | `1` | Percentage of requests that delete expired sessions; `0` to rely on `clearsessions` |
+
+### CSRF
+
+Used by `CsrfViewMiddleware`. See [CSRF protection](../topics/security.md#csrf-protection).
+
+| Setting | Type | Default | Description |
+|---|---|---|---|
+| `CSRF_COOKIE_NAME` | string | `'csrftoken'` | Name of the CSRF cookie |
+| `CSRF_COOKIE_AGE` | int | `31449600` (about a year) | Lifetime of the cookie, in seconds |
+| `CSRF_COOKIE_SECURE` | bool | `false` | Only send the cookie over HTTPS. `true` in production |
+| `CSRF_COOKIE_HTTPONLY` | bool | `false` | Hide the cookie from JavaScript (AJAX then reads the token from the page) |
+| `CSRF_COOKIE_SAMESITE` | string | `'Lax'` | `'Lax'`, `'Strict'` or `'None'` |
+| `CSRF_COOKIE_DOMAIN` | string or null | `null` | Cookie domain |
+| `CSRF_COOKIE_PATH` | string | `'/'` | Cookie path |
+| `CSRF_HEADER_NAME` | string | `'X-CSRFToken'` | Header carrying the token in AJAX requests |
+| `CSRF_TRUSTED_ORIGINS` | list of strings | `[]` | Other origins allowed to post, e.g. `'https://*.example.com'` |
+| `CSRF_USE_SESSIONS` | bool | `false` | Keep the secret in the session instead of a cookie |
+
+### Authentication
+
+Used by the `brewphp.auth` app. See [Authentication](../topics/auth.md).
+
+| Setting | Type | Default | Description |
+|---|---|---|---|
+| `AUTHENTICATION_BACKENDS` | list | `[ModelBackend::class]` | `AuthBackend` classes tried in order by `Auth::authenticate()` |
+| `AUTH_PASSWORD_VALIDATORS` | list | `[]` | Password rules: validator objects or class names. The skeleton turns on all four built-in rules |
+| `PASSWORD_HASHER` | string or null | `null` | `'argon2id'` or `'bcrypt'`; `null` uses Argon2id when PHP supports it, else bcrypt |
+| `PASSWORD_HASHER_OPTIONS` | array | `[]` | `password_hash()` options, e.g. `['cost' => 12]` |
+| `AUTH_LOGIN_ATTEMPTS` | int | `5` | Failed logins allowed per username and IP before a lockout; `0` turns it off |
+| `AUTH_LOGIN_LOCKOUT` | int | `900` | Length of the lockout window, in seconds |
+| `LOGIN_URL` | string | `'/accounts/login/'` | Where `LoginRequired` sends visitors: a path, URL or route name |
+| `LOGIN_REDIRECT_URL` | string | `'/'` | Where the login page goes without a safe `next`: a path or route name |
+| `LOGOUT_REDIRECT_URL` | string or null | `null` | Where the logout view goes; `null` shows `registration/logged_out.html` |
+
 !!! note "More settings are coming"
-    `CACHE`, `MAIL` and the session and CSRF settings arrive with the
-    features that use them.
+    `CACHE` and `MAIL` arrive with the features that use them.
 
 ### Allowed hosts
 
@@ -263,17 +334,23 @@ php manage.php check --deploy
     HINT: List the domain names this site serves.
 ! [security.W004] SECURE_HSTS_SECONDS is not set, so browsers are not told to always use HTTPS.
     HINT: Set it (e.g. 31536000) once the whole site works over HTTPS.
+! [security.W012] SESSION_COOKIE_SECURE is off, so the session cookie can travel over plain HTTP.
+    HINT: Set SESSION_COOKIE_SECURE to true on an HTTPS site.
+! [security.W016] CSRF_COOKIE_SECURE is off, so the CSRF cookie can travel over plain HTTP.
+    HINT: Set CSRF_COOKIE_SECURE to true on an HTTPS site.
 
-System check identified 3 issues.
+System check identified 5 issues.
 ```
 
-See [`check`](../cli/overview.md#check) for every check.
+See [`check`](../cli/overview.md#check) for every check, and the
+[deployment checklist](../topics/security.md#deployment-checklist).
 
 ## Error pages
 
 With `DEBUG = true`, errors show a detailed page: the exception, the stack
 trace with source code, the request and the settings (values whose names
-contain `SECRET`, `PASSWORD`, `KEY`, `TOKEN` and similar words are masked).
+contain `SECRET`, `PASSWORD`, `KEY`, `TOKEN`, `COOKIE`, `SESSION`, `CSRF`
+and similar words are masked, such as the session and CSRF cookies).
 An unknown URL lists the URL patterns that were tried.
 
 With `DEBUG = false`, a plain page is shown and server errors are written to

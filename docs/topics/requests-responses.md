@@ -75,8 +75,8 @@ function create_post(Request $request): array
 
 !!! warning "Input is untrusted"
     Values come from the user. Validate them, cast them to the type you need,
-    and escape them with `e()` when you print them. Forms with validation
-    arrive in v0.5.
+    and escape them with `e()` when you print them, or let a
+    [form](forms.md) do it.
 
 ### Headers, cookies and server values
 
@@ -99,6 +99,30 @@ stores the matched route as `route`:
 ```php
 $match = $request->attribute('route');   // BrewPHP\Routing\RouteMatch
 $request->setAttribute('started_at', microtime(true));
+```
+
+### Session and user
+
+With [`SessionMiddleware`](sessions.md) and
+[`AuthenticationMiddleware`](auth.md), the request carries the visitor's
+session and user:
+
+| Method | Returns |
+|---|---|
+| `session()` | The `Session`. Throws `ImproperlyConfigured` without `SessionMiddleware`. |
+| `hasSession()` | Whether the request has a session. |
+| `user()` | The logged-in `User`, or an `AnonymousUser`; loaded from the session on first use. Throws `ImproperlyConfigured` without `AuthenticationMiddleware`. |
+| `setUser($user)` | Replace the user of this request (done by `Auth::login()` and `Auth::logout()`). |
+
+```php
+use BrewPHP\Http\Request;
+
+function profile(Request $request): string
+{
+    $request->session()->set('last_page', 'profile');
+
+    return 'Signed in as ' . e($request->user()->getUsername());
+}
 ```
 
 ### Building requests by hand
@@ -147,6 +171,13 @@ return (new Response('Hello'))
 | `getHeader($name)`, `hasHeader($name)`, `removeHeader($name)` | inspect and remove headers (case-insensitive) |
 | `headers()` | all headers |
 | `cookie(Cookie $cookie)` / `deleteCookie($name)` / `cookies()` | cookies |
+| `vary('Cookie', ...)` | add header names to `Vary`, once each |
+
+`vary()` tells caches that the response depends on request headers. The
+session and CSRF middleware call `vary('Cookie')` when a page used the
+session or a CSRF token, so a cache never shows one visitor's page to
+another. Do the same when your view's output depends on a header:
+`$response->vary('Accept-Language')`.
 
 Header values with line breaks are rejected, which prevents header
 injection.

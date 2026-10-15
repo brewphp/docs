@@ -24,8 +24,9 @@ the framework and understand what it does.
 
 - **Small and readable.** No magic that can't be explained in one paragraph.
 - **Django feel, PHP idioms.** Familiar concepts, idiomatic modern PHP.
-- **Secure by default.** Escaped output, host validation, security headers,
-  no stack traces in production.
+- **Secure by default.** Escaped output, CSRF protection, safe sessions,
+  strong password hashing, host validation, security headers, no stack
+  traces in production.
 - **Everything from the command line.** `php manage.php` runs the server,
   checks your project, migrates the database and generates code.
 
@@ -70,6 +71,17 @@ migrations create them:
 php manage.php startapp blog         # then add 'blog' to INSTALLED_APPS
 php manage.php makemigrations        # after writing models in apps/blog/models.php
 php manage.php migrate
+```
+
+Users come built in. Create an account and log in at `/accounts/login/`;
+then protect a page with one line:
+
+```bash
+php manage.php createsuperuser
+```
+
+```php
+path('dashboard/', dashboard(...), name: 'dashboard', middleware: [LoginRequired::class]),
 ```
 
 ## Features
@@ -121,6 +133,33 @@ php manage.php migrate
 
     [:octicons-arrow-right-24: Migrations](topics/migrations.md)
 
+-   **Forms**
+
+    ---
+
+    Fields that validate and clean input, escaped rendering, and
+    `ModelForm` to create and edit objects.
+
+    [:octicons-arrow-right-24: Forms](topics/forms.md)
+
+-   **Users and sessions**
+
+    ---
+
+    Login, logout, password change, groups and permissions, sessions and
+    flash messages, ready to use.
+
+    [:octicons-arrow-right-24: Authentication](topics/auth.md)
+
+-   **Security**
+
+    ---
+
+    CSRF protection, safe redirects, signing, rate limiting and a
+    deployment checklist.
+
+    [:octicons-arrow-right-24: Security](topics/security.md)
+
 -   **Middleware**
 
     ---
@@ -161,6 +200,6 @@ tests and documentation.
 | v0.2 | ORM (SQLite, MySQL, PostgreSQL) | **Available now** |
 | v0.3 | Templates (Django-like syntax) | **Available now** |
 | v0.4 | Migrations and `startapp` | **Available now** |
-| v0.5 | Auth, sessions, CSRF, forms | Coming |
+| v0.5 | Auth, sessions, CSRF, forms | **Available now** |
 | v0.6 | Automatic admin | Coming |
 

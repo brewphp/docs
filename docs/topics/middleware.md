@@ -6,8 +6,8 @@ calling `$next($request)`, after it (on the response), or answer by itself
 without calling it at all.
 
 ```text
-request ─► SecurityHeaders ─► Timing ─► route middleware ─► view
-response ◄─────────────────────────────────────────────────┘
+request ─► SecurityHeaders ─► Session ─► Csrf ─► Authentication ─► route middleware ─► view
+response ◄────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Writing middleware
@@ -186,7 +186,58 @@ middleware will not replace it:
 return response('Embeddable widget')->header('X-Frame-Options', 'SAMEORIGIN');
 ```
 
+## Built-in middleware
+
+| Middleware | Purpose |
+|---|---|
+| `BrewPHP\Middleware\SecurityHeadersMiddleware` | Security headers (above). |
+| `BrewPHP\Sessions\SessionMiddleware` | Gives every request a session, `$request->session()`, loaded on first use and saved when it changed. See [Sessions](sessions.md). |
+| `BrewPHP\Security\CsrfViewMiddleware` | Checks every `POST`, `PUT`, `PATCH` and `DELETE` request for a CSRF token and a trusted origin; a failure is a `403`. See [CSRF protection](security.md#csrf-protection). |
+| `BrewPHP\Auth\AuthenticationMiddleware` | Makes `$request->user()` return the logged-in `User` or an `AnonymousUser`. See [Authentication](auth.md). |
+
+### Recommended order
+
+```php title="config/settings.php"
+use BrewPHP\Auth\AuthenticationMiddleware;
+use BrewPHP\Middleware\SecurityHeadersMiddleware;
+use BrewPHP\Security\CsrfViewMiddleware;
+use BrewPHP\Sessions\SessionMiddleware;
+
+'MIDDLEWARE' => [
+    SecurityHeadersMiddleware::class,   // headers on every response, error pages included
+    SessionMiddleware::class,           // before everything that uses the session
+    CsrfViewMiddleware::class,          // after sessions (needed with CSRF_USE_SESSIONS)
+    AuthenticationMiddleware::class,    // needs the session
+],
+```
+
+This is the skeleton's list. `AuthenticationMiddleware` throws
+`ImproperlyConfigured` when no session exists, and `php manage.php check`
+reports `auth.W001` (missing) or `auth.E001` (before `SessionMiddleware`).
+Your own middleware that reads `$request->user()` goes after
+`AuthenticationMiddleware`.
+
+### Route middleware for logins and permissions
+
+Two middleware classes protect single routes or groups:
+
+```php title="apps/blog/urls.php"
+use BrewPHP\Auth\Middleware\LoginRequired;
+use BrewPHP\Auth\Middleware\PermissionRequired;
+
+return [
+    path('dashboard/', dashboard(...), name: 'dashboard', middleware: [LoginRequired::class]),
+    path('posts/new/', new_post(...), name: 'new', middleware: [new PermissionRequired('blog.add_post')]),
+];
+```
+
+`LoginRequired` redirects visitors who are not logged in to `LOGIN_URL`
+with `?next=`. `PermissionRequired` takes one or more permissions (all are
+needed), sends anonymous visitors to the login page and answers `403` to
+logged-in users without them. As the example shows, a middleware object
+with constructor arguments works as well as a class name. See
+[Protecting views](auth.md#protecting-views).
+
 ## Coming soon
 
-Session, CSRF, authentication, CORS and maintenance-mode middleware arrive
-with their features in later releases.
+CORS and maintenance-mode middleware arrive in later releases.

@@ -8,10 +8,61 @@ in the framework repository.
 
 ## [Unreleased]
 
-The v0.1 foundation, the v0.2 ORM, the v0.3 template language and the v0.4
-migrations and `startapp`.
+The v0.1 foundation, the v0.2 ORM, the v0.3 template language, the v0.4
+migrations and `startapp`, and the v0.5 sessions, CSRF protection,
+authentication and forms.
 
 ### Added
+
+- **Sessions (v0.5):** `SessionMiddleware` and `$request->session()`
+  (`get`, `set`, `has`, `remove`, `pull`, `clear`, `flush`, `cycleKey`),
+  loaded lazily and saved only when changed; file (default), database
+  (`brewphp.sessions` app) and array stores, or your own `SessionStore`;
+  data stored as JSON, never unserialized; ids the store does not know are
+  never adopted (no session fixation); HttpOnly, SameSite=Lax cookies and
+  the `SESSION_*` settings; the `clearsessions` command. See
+  [Sessions](topics/sessions.md).
+- **Messages (v0.5):** one-time flash messages (`Messages::success()`,
+  `info()`, `warning()`, `error()`, `debug()`) and the `messages` context
+  processor.
+- **CSRF protection (v0.5):** `CsrfViewMiddleware` with masked tokens (a
+  different token on every page, against BREACH), the
+  `csrfmiddlewaretoken` field or `X-CSRFToken` header, Origin checks,
+  Referer checks over HTTPS, `CSRF_TRUSTED_ORIGINS` (with
+  `https://*.example.com`), `CSRF_USE_SESSIONS`, the `#[CsrfExempt]`
+  attribute, a new token at login, and `csrf_token` in every template
+  rendered with a request. See [Security](topics/security.md#csrf-protection).
+- **Authentication (v0.5):** the `brewphp.auth` app with `User`, `Group`
+  and `Permission` models, and default add/change/delete/view permissions
+  created after `migrate`; `Auth::authenticate()`, `login()`, `logout()`
+  and `updateSessionAuthHash()`; `AuthenticationMiddleware` and
+  `$request->user()`; `ModelBackend` and custom `AUTHENTICATION_BACKENDS`;
+  Argon2id or bcrypt-SHA256 hashes upgraded at login; password validators;
+  other sessions logged out when the password changes; login throttling;
+  `LoginRequired` and `PermissionRequired` route middleware; login, logout
+  (POST only) and password change pages with overridable templates; the
+  `auth` context processor (`user`, `perms`); the `createsuperuser` and
+  `changepassword` commands. See [Authentication](topics/auth.md).
+- **Forms (v0.5):** `Form` with fields, `clean<Name>()` hooks, `clean()`,
+  errors, prefixes, initial values and escaped, accessible rendering;
+  18 field types, including `FileField`, `ModelChoiceField` and
+  `ModelMultipleChoiceField` (limited to their QuerySet); widgets for every
+  input type, selects, radios and checkboxes; `ModelForm`, which requires
+  an explicit field list and runs the model's validation. See
+  [Forms](topics/forms.md).
+- **Security helpers (v0.5):** `Signer` (HMAC-SHA256 with salts,
+  timestamps and signed JSON), `Redirects::isSafe()` against open
+  redirects, and `RateLimiter`.
+- **Testing (v0.5):** `BrewPHP\Testing\Client`, a test browser that keeps
+  cookies, logs users in and provides CSRF tokens. See
+  [Testing](topics/testing.md).
+- **Templates and HTTP (v0.5):** the `HtmlSafe` interface;
+  `Response::vary()`; `Request::session()`, `hasSession()`, `user()` and
+  `setUser()`.
+- **Checks (v0.5):** `auth.W001` and `auth.E001` for the middleware
+  order, and `check --deploy` warnings `security.W003`, `security.W012`
+  and `security.W016` for a missing `CsrfViewMiddleware` and insecure
+  session or CSRF cookies.
 
 - **Migrations (v0.4):** migration files in each app's `migrations/`
   folder (`0001_initial.php`...), each returning an anonymous `Migration`
@@ -126,6 +177,10 @@ migrations and `startapp`.
 
 ### Changed
 
+- **Migrations (v0.5):** generated files start with
+  `return new class () extends Migration {` (PSR-12).
+- **Debug page (v0.5):** values whose names contain `SESSION` or `CSRF`
+  (such as the session cookie) are masked too.
 - **SQLite schema editor (v0.4):** adding a non-null column without a
   default to an empty table, or making a column non-null without a default,
   now works as on MySQL and PostgreSQL; it only fails when a row needs a

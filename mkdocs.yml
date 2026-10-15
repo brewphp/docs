@@ -72,6 +72,11 @@ nav:
       - Making queries: topics/queries.md
       - Databases: topics/databases.md
       - Migrations: topics/migrations.md
+      - Forms: topics/forms.md
+      - Sessions: topics/sessions.md
+      - Authentication: topics/auth.md
+      - Security: topics/security.md
+      - Testing: topics/testing.md
   - Reference:
       - Built-in tags and filters: ref/templates-builtins.md
   - CLI:

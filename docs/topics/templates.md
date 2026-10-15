@@ -282,6 +282,35 @@ To print HTML that you trust:
 In PHP templates, `e()` also leaves a `SafeString` unchanged, so
 `<?= e($form) ?>` prints safe HTML once.
 
+### HtmlSafe objects
+
+An object whose string form is already escaped HTML can implement the
+`BrewPHP\Templates\HtmlSafe` interface (a `Stringable`). Auto-escaping and
+`e()` then print it as it is. [Forms](forms.md), their fields and error
+lists implement it, so `{{ form }}` and `{{ form.email.errors }}` print
+markup while every value inside is escaped. `SafeString` implements it
+too.
+
+```php
+use BrewPHP\Templates\HtmlSafe;
+
+final class Badge implements HtmlSafe
+{
+    public function __construct(private readonly string $label)
+    {
+    }
+
+    public function __toString(): string
+    {
+        return '<span class="badge">' . e($this->label) . '</span>';
+    }
+}
+```
+
+!!! warning
+    Only implement `HtmlSafe` on classes that escape every value they put
+    in their HTML.
+
 ### Data for JavaScript
 
 Do not build JavaScript from template variables. Use `json_script` and read
@@ -348,8 +377,23 @@ use BrewPHP\Templates\ContextProcessors;
 ],
 ```
 
-The built-in `request` processor adds `request`, so templates can use
-`{{ request.path }}` or `{{ request.method }}`. It is on by default.
+The built-in processors are methods of
+`BrewPHP\Templates\ContextProcessors`:
+
+| Processor | Adds | Needs |
+|---|---|---|
+| `[ContextProcessors::class, 'request']` | `request`: `{{ request.path }}`, `{{ request.method }}`. On by default. | |
+| `[ContextProcessors::class, 'auth']` | `user` (the logged-in `User` or an `AnonymousUser`) and `perms` (`{% if perms.blog.add_post %}`). See [Authentication](auth.md#in-templates). | `AuthenticationMiddleware` |
+| `[ContextProcessors::class, 'messages']` | `messages`, the [flash messages](sessions.md#flash-messages), removed once a template loops over them. | `SessionMiddleware` |
+
+The skeleton turns on all three. Without the middleware they need, `auth`
+and `messages` add nothing.
+
+`csrf_token` is always added, whatever the list contains, so
+`{% csrf_token %}` works in every template rendered with `render()` or
+`render_to_string()` during a request. The token (and its cookie) is only
+created when a template prints it. See
+[CSRF protection](security.md#csrf-protection).
 The variables a view passes win over those of the processors. Wrap an
 expensive value in a closure (`'stats' => fn () => compute_stats()`): it
 is only computed if a template uses it.
@@ -538,6 +582,6 @@ Every error class lives in `BrewPHP\Templates`: `TemplateError` (with
 | `TEMPLATES.DIRS` | `['templates']` | Project template folders, searched before app templates. |
 | `TEMPLATES.CACHE` | `true` | Reuse compiled templates until their source changes. |
 | `TEMPLATES.STRICT` | `false` | Raise `VariableDoesNotExist` for missing variables. |
-| `TEMPLATES.CONTEXT_PROCESSORS` | `[[ContextProcessors::class, 'request']]` | Callables or invokable classes adding variables to every template rendered during a request. |
+| `TEMPLATES.CONTEXT_PROCESSORS` | `[[ContextProcessors::class, 'request']]` | Callables or invokable classes adding variables to every template rendered during a request (the skeleton adds `auth` and `messages`). |
 
 `STATIC_URL` is used by `{% static %}`.

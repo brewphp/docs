@@ -37,8 +37,10 @@ note may follow the tag name.
 ### csrf_token
 
 Prints a hidden `csrfmiddlewaretoken` form field holding the `csrf_token`
-context variable, or nothing when there is no token. The CSRF protection
-that provides the token arrives in v0.5; templates can use the tag today.
+context variable, or nothing when there is no token. `csrf_token` is
+available in every template rendered during a request; a new masked token
+is printed on each page. Put the tag in every form that posts to your own
+site. See [CSRF protection](../topics/security.md#csrf-protection).
 
 ```django
 <form method="post">{% csrf_token %}...</form>

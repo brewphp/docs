@@ -9,8 +9,16 @@ composer create-project brewphp/skeleton myapp
 cd myapp
 ```
 
-Composer installs BrewPHP, copies `.env.example` to `.env` and runs
-`php manage.php key:generate`, which writes a random `SECRET_KEY` to `.env`.
+Composer installs BrewPHP, copies `.env.example` to `.env`, runs
+`php manage.php key:generate`, which writes a random `SECRET_KEY` to `.env`,
+and `php manage.php migrate`, which creates the tables of the built-in
+users and sessions apps in `storage/db.sqlite3`.
+
+Create your first user, with every permission:
+
+```bash
+php manage.php createsuperuser
+```
 
 Start the development server:
 
@@ -26,7 +34,8 @@ BrewPHP development server at http://127.0.0.1:8000/
 Quit the server with CTRL-C.
 ```
 
-Open <http://127.0.0.1:8000/> and you will see the welcome page.
+Open <http://127.0.0.1:8000/> and you will see the welcome page. Log in at
+<http://127.0.0.1:8000/accounts/login/> (see [Authentication](../topics/auth.md)).
 
 !!! tip "Another address or port"
     Pass an address, a port, or both: `php manage.php serve 8080` or
@@ -52,6 +61,7 @@ secrets), so create it yourself:
 composer install
 cp .env.example .env
 php manage.php key:generate
+php manage.php migrate
 ```
 
 ## Global installer (planned)

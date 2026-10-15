@@ -192,7 +192,8 @@ namespace are taken from the class.
 | `Commands/` | `manage.php` commands, discovered automatically |
 | `migrations/` | [Migrations](../topics/migrations.md): `0001_initial.php`, `0002_...`, written by `makemigrations` |
 | `tests/` | Tests of the app |
-| `forms.php`, `admin.php`, `static/<label>/` | Coming in later releases |
+| `forms.php` | [Forms](../topics/forms.md) (loaded at boot like `models.php`) |
+| `admin.php`, `static/<label>/` | Coming in later releases |
 
 ### Creating an app
 

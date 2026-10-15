@@ -11,7 +11,7 @@ php manage.php <command> [options] [arguments]
 Run it without a command (or with `list`) to see every command:
 
 ```text
-BrewPHP 0.4.0-dev
+BrewPHP 0.5.0-dev
 
 Usage:
   php manage.php <command> [options] [arguments]
@@ -24,20 +24,27 @@ Global options:
   -V, --version           Show the BrewPHP version
 
 Available commands:
-  about           Show versions, environment and installed apps
-  check           Check the project for common problems
-  makemigrations  Create migrations from changes to your models
-  migrate         Apply (or unapply) migrations to the database
-  routes          List every URL pattern with its name, view and middleware
-  serve           Start the development server [runserver]
-  showmigrations  List migrations and whether they are applied
-  sqlmigrate      Print the SQL of a migration without running it
-  startapp        Create a new app in apps/<label>/
+  about            Show versions, environment and installed apps
+  changepassword   Change the password of a user
+  check            Check the project for common problems
+  clearsessions    Delete expired sessions (run it from cron)
+  createsuperuser  Create a user with every permission (and access to the admin)
+  makemigrations   Create migrations from changes to your models
+  migrate          Apply (or unapply) migrations to the database
+  routes           List every URL pattern with its name, view and middleware
+  serve            Start the development server [runserver]
+  showmigrations   List migrations and whether they are applied
+  sqlmigrate       Print the SQL of a migration without running it
+  startapp         Create a new app in apps/<label>/
  key
-  key:generate    Generate a new SECRET_KEY and write it to .env
+  key:generate     Generate a new SECRET_KEY and write it to .env
  make
-  make:command    Create a new manage.php command in an app
+  make:command     Create a new manage.php command in an app
 ```
+
+`changepassword` and `createsuperuser` come from the built-in
+`brewphp.auth` app, and `clearsessions` from `brewphp.sessions`; they are
+listed when those apps are installed (as in the skeleton).
 
 ## How it works
 
@@ -108,7 +115,7 @@ php manage.php about [--json]
 
 ```text
 Environment
-  BrewPHP version .................................. 0.4.0-dev
+  BrewPHP version .................................. 0.5.0-dev
   PHP version ......................................... 8.2.34
   Operating system ..................................... Linux
   Project path ............................... /home/ada/myapp
@@ -119,6 +126,8 @@ Environment
   Database ............................ sqlite (storage/db.sqlite3)
 
 Installed apps
+  auth .......................................... brewphp.auth
+  sessions .................................. brewphp.sessions
   pages ........................................... apps.pages
 
 Extensions
@@ -129,6 +138,26 @@ Extensions
   sodium ................................................. yes
   OPcache ................................................ off
 ```
+
+### changepassword
+
+Change the password of a user (needs `brewphp.auth`).
+
+```bash
+php manage.php changepassword <username>
+```
+
+```text
+Changing password for user "ann"
+Password:
+Password (again):
+✔ Password changed successfully for user "ann".
+```
+
+The password is asked twice (hidden where the terminal allows it) and
+checked against `AUTH_PASSWORD_VALIDATORS`; after three failed tries
+nothing changes. It cannot run with `-n`. The user's other sessions are
+logged out. See [Authentication](../topics/auth.md#commands).
 
 ### check
 
@@ -158,8 +187,12 @@ $ php manage.php check --deploy
     HINT: List the domain names this site serves.
 ! [security.W004] SECURE_HSTS_SECONDS is not set, so browsers are not told to always use HTTPS.
     HINT: Set it (e.g. 31536000) once the whole site works over HTTPS.
+! [security.W012] SESSION_COOKIE_SECURE is off, so the session cookie can travel over plain HTTP.
+    HINT: Set SESSION_COOKIE_SECURE to true on an HTTPS site.
+! [security.W016] CSRF_COOKIE_SECURE is off, so the CSRF cookie can travel over plain HTTP.
+    HINT: Set CSRF_COOKIE_SECURE to true on an HTTPS site.
 
-System check identified 3 issues.
+System check identified 5 issues.
 ```
 
 Warnings alone exit with `0`; add `--fail-level=warning` to fail on them in
@@ -178,6 +211,11 @@ CI. The checks:
 | `security.W020` | warning (deploy) | `ALLOWED_HOSTS` is empty |
 | `security.W004` | warning (deploy) | `SECURE_HSTS_SECONDS` is not set |
 | `security.W001` | warning (deploy) | `SecurityHeadersMiddleware` is not in `MIDDLEWARE` |
+| `security.W003` | warning (deploy) | `CsrfViewMiddleware` is not in `MIDDLEWARE` |
+| `security.W012` | warning (deploy) | `SESSION_COOKIE_SECURE` is off while `SessionMiddleware` is used |
+| `security.W016` | warning (deploy) | `CSRF_COOKIE_SECURE` is off while `CsrfViewMiddleware` is used (and `CSRF_USE_SESSIONS` is off) |
+| `auth.W001` | warning | `brewphp.auth` is installed but `AuthenticationMiddleware` is not in `MIDDLEWARE` |
+| `auth.E001` | error | `AuthenticationMiddleware` comes before `SessionMiddleware` (or the latter is missing) |
 | `db.E001` | error | `DATABASES` has no `default` connection |
 | `db.E002` | error | a `DATABASES` entry is not an array or has an unknown `ENGINE` |
 | `db.E003` | error | the PDO driver of a database engine is not installed |
@@ -202,6 +240,53 @@ public function ready(Application $app): void
 ```
 
 Pass `deploy: true` to `register()` for checks that only run with `--deploy`.
+
+### clearsessions
+
+Delete expired sessions from the store chosen by `SESSION_ENGINE` (needs
+`brewphp.sessions`). Run it from cron on busy sites or when
+`SESSION_GC_PROBABILITY` is `0`.
+
+```bash
+php manage.php clearsessions
+```
+
+```text
+✔ Deleted 3 expired sessions.
+```
+
+See [Sessions](../topics/sessions.md#expiry-and-clearsessions).
+
+### createsuperuser
+
+Create a user with `is_staff` and `is_superuser` set, so with every
+permission (needs `brewphp.auth`).
+
+```bash
+php manage.php createsuperuser [--username=VALUE] [--email=VALUE]
+```
+
+| Option | Meaning |
+|---|---|
+| `--username=VALUE` | The username (asked when missing) |
+| `--email=VALUE` | The email address (asked when missing, may be empty) |
+
+The password is asked twice and checked against
+`AUTH_PASSWORD_VALIDATORS`; you may bypass a failed rule. It is never
+accepted as an argument. With `-n`, `--username` is required and the
+password is read from the `BREWPHP_SUPERUSER_PASSWORD` environment
+variable; without it the account has no usable password:
+
+```bash
+BREWPHP_SUPERUSER_PASSWORD='a long admin passphrase' \
+    php manage.php createsuperuser -n --username=admin --email=admin@example.com
+```
+
+```text
+✔ Superuser created successfully.
+```
+
+See [Authentication](../topics/auth.md#commands).
 
 ### key:generate
 
