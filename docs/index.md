@@ -225,6 +225,9 @@ tests and documentation.
 | v0.4 | Migrations and `startapp` | **Available now** |
 | v0.5 | Auth, sessions, CSRF, forms | **Available now** |
 | v0.6 | Automatic admin | **Available now** |
+| **v1.0** | **First stable release** | **Released** |
 
-Every version on the roadmap is available.
+BrewPHP 1.0 is stable and follows semantic versioning: no breaking change
+before 2.0. Ideas for 1.x include many-to-many fields, a custom user model
+setting, password reset by email and admin inlines.
 

@@ -11,7 +11,7 @@ php manage.php <command> [options] [arguments]
 Run it without a command (or with `list`) to see every command:
 
 ```text
-BrewPHP 0.6.0-dev
+BrewPHP 1.0.0
 
 Usage:
   php manage.php <command> [options] [arguments]
@@ -115,7 +115,7 @@ php manage.php about [--json]
 
 ```text
 Environment
-  BrewPHP version .................................. 0.6.0-dev
+  BrewPHP version .................................. 1.0.0
   PHP version ......................................... 8.2.34
   Operating system ..................................... Linux
   Project path ............................... /home/ada/myapp

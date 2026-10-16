@@ -6,13 +6,19 @@ uses [Semantic Versioning](https://semver.org/). The canonical file is
 [CHANGELOG.md](https://github.com/brewphp/brewphp/blob/main/CHANGELOG.md)
 in the framework repository.
 
-## [Unreleased]
+## [1.0.0] - 2026-10-16
 
-The v0.1 foundation, the v0.2 ORM, the v0.3 template language, the v0.4
-migrations and `startapp`, the v0.5 sessions, CSRF protection,
-authentication and forms, and the v0.6 automatic admin.
+The first stable release. It brings together the v0.1 foundation, the v0.2
+ORM, the v0.3 template language, the v0.4 migrations and `startapp`, the
+v0.5 sessions, CSRF protection, authentication and forms, and the v0.6
+automatic admin. From now on the public API follows semantic versioning:
+no breaking change before 2.0.
 
 ### Added
+
+- **CI (1.0):** GitHub Actions run code style, PHPStan and the tests on PHP
+  8.2, 8.3 and 8.4 with SQLite, MySQL and PostgreSQL, and the live tests on
+  MariaDB.
 
 - **Admin (v0.6):** the `brewphp.admin` app, an automatic admin like
   Django's: `AdminSite` (mounted with `AdminSite::default()->urls()` under
@@ -228,6 +234,9 @@ authentication and forms, and the v0.6 automatic admin.
 
 ### Fixed
 
+- **Database (1.0):** model metadata is rebuilt when another Application
+  becomes the current one, so a model first seen without its app no longer
+  keeps the wrong app label.
 - **CLI (v0.6):** password prompts work with piped input.
 - **Forms (v0.6):** a field without a limit no longer removes `maxlength`,
   `min` or `max` set on its widget.
